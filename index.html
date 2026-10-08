@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>现场同频 · v2.4</title>
+<title>现场同频 · v2.5</title>
 <style>
 :root{--bg:#f2f2f7;--card:#fff;--tx:#000;--tx2:#8e8e93;--sep:rgba(60,60,67,.18);--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--bar:rgba(249,249,249,.85)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--tx:#fff;--tx2:#8e8e93;--sep:rgba(84,84,88,.6);--blue:#0a84ff;--bar:rgba(29,29,30,.85)}}
@@ -843,6 +843,22 @@ html,body{
 .about-copy b{font-size:17px;color:var(--tx)}
 .about-copy span{font-size:13px;color:var(--tx2)}
 .about-meta{display:flex;flex-direction:column;gap:4px;padding:10px 4px 0;color:var(--tx2);font-size:12px;line-height:1.5}
+
+/* ===== v2.5 camera fixes ===== */
+/* 取景框尺寸由 JS（layoutCam）按所选比例精确计算，这里去掉旧的百分比公式带来的限制 */
+#live>video{max-width:none!important;max-height:none!important;aspect-ratio:auto!important}
+#ratioBtn{white-space:nowrap;font-variant-numeric:tabular-nums}
+/* 横屏相机：操作区固定在右侧竖排，避开顶部按钮（旧规则被后面的竖屏规则覆盖，导致横屏布局错位） */
+@media (orientation:landscape) and (max-height:559px){
+  #live.cam #cc{left:auto;right:max(10px,env(safe-area-inset-right,0px));top:56px;bottom:0;width:96px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 0 6px;background:none}
+  #live.cam .cmode{flex-direction:column;margin:0;gap:2px;padding:3px}
+  #live.cam .cmode button{padding:5px 9px;font-size:12px}
+  #live.cam .crow{flex-direction:column;gap:10px;padding:0}
+  #live.cam .shut{width:62px;height:62px}
+  #live.cam .cb{width:42px;height:42px}
+}
+/* 相机取景时不显示「请先导入歌曲」占位提示，避免压在快门后面 */
+#live.cam .empty-live{display:none}
 </style>
 
 <!-- UI libraries: chroma.js provides the adaptive Opal palette; anime.js provides lightweight interaction motion. -->
@@ -865,7 +881,7 @@ html,body{
   <div class="prog"><i id="pg"></i></div>
   <!-- 开发调试面板：开发模式下由 设置 > 识别与调试 > 调试面板 开启 -->
   <div class="dbg" id="dbg"><div id="dbgr"></div><button class="act" id="lb" onclick="loseSig()" style="margin:8px 0 0;padding:8px;font-size:14px">模拟信号丢失</button><label class="act" style="display:block;text-align:center;margin:8px 0 0;padding:8px;font-size:14px;cursor:pointer">用音频文件代替麦克风（测试）<input type="file" id="ff" accept="audio/*" hidden onchange="feedFile(this.files[0]);this.value=''"></label><label>匹配阈值 <b id="thv">0.25</b><input type="range" min="0.1" max="1" step="0.05" value="0.25" oninput="setTh(this.value)"></label><label>丢失判定 <b id="lov">8</b>秒<input type="range" min="3" max="20" step="1" value="8" oninput="setLo(this.value)"></label><label>输入设备 <select id="dev" onchange="chDev(this.value)"></select></label><label><input type="checkbox" checked onchange="st.free=this.checked"> 丢失后按原进度继续</label></div>
-  <div id="cc" style="display:none"><div class="cmode"><button data-m="photo" class="on" onclick="setMode('photo')">照片</button><button data-m="video" onclick="setMode('video')">视频</button></div><div class="crow"><button class="cb" id="gal" onclick="openGal()" aria-label="相册">▢</button><button class="shut" id="shut" onclick="shutter()" aria-label="快门"></button><button class="cb" id="rt" onclick="rightBtn()" aria-label="切换摄像头">⟲</button></div></div>
+  <div id="cc" style="display:none"><div class="cmode"><button data-m="photo" class="on" onclick="setMode('photo')">照片</button><button data-m="video" onclick="setMode('video')">视频</button><button id="ratioBtn" onclick="cycleRatio()" aria-label="拍摄比例">比例</button></div><div class="crow"><button class="cb" id="gal" onclick="openGal()" aria-label="相册">▢</button><button class="shut" id="shut" onclick="shutter()" aria-label="快门"></button><button class="cb" id="rt" onclick="rightBtn()" aria-label="切换摄像头">⟲</button></div></div>
   <div class="lact" id="la"><button onclick="openSheet()"><span class="act-ico">♫</span><span>选歌</span></button><button class="main" id="mainBtn" onclick="toggle()"><span class="main-dot"></span><span>开始同频</span></button></div>
  </section>
  <section class="page" id="p-set"><h1 id="setTitle">设置<span class="devb">开发模式</span></h1><div id="setc"></div><div style="height:24px"></div></section>
@@ -875,7 +891,7 @@ html,body{
   <button class="tab" data-t="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>设置</button>
  </nav>
  <div class="sheet" id="sheet2"><div class="grab"></div><h3 id="s2t"></h3><input type="text" id="s2n" placeholder="歌曲名称" onchange="renameSong()"><p class="note" id="s2i"></p><button class="act" onclick="document.getElementById('fl').click()">导入 / 替换歌词（.lrc 或 .txt）</button><button class="act" onclick="clearLrc()">清除歌词</button><button class="act red" id="s2d" onclick="delSong()">删除歌曲</button><button class="act" onclick="closeSheet()">完成</button></div><input type="file" id="fl" accept=".lrc,.txt" hidden>
- <div class="sheet" id="sheet3" style="max-height:82%;overflow:auto"><div class="grab"></div><div class="gallery-head"><div><h3 style="margin:0;text-align:left">相册</h3><div class="count" id="galCount">0 个项目</div></div><button onclick="closeSheet()">完成</button></div><div class="gallery-tools"><button onclick="renderGal()">刷新</button><button class="red" onclick="clearGal()">清空</button></div><div class="group" id="gl" style="margin-top:10px"></div><p class="note">点缩略图预览；照片和视频都可以单独保存或删除。</p></div>
+ <div class="sheet" id="sheet3" style="max-height:82%;overflow:auto"><div class="grab"></div><div class="gallery-head"><div><h3 style="margin:0;text-align:left">相册</h3><div class="count" id="galCount">0 个项目</div></div><button onclick="closeSheet()">完成</button></div><div class="gallery-tools"><button onclick="renderGal()">刷新</button><button class="red" onclick="clearGal(this)">清空</button></div><div class="group" id="gl" style="margin-top:10px"></div><p class="note">点缩略图预览；照片和视频都可以单独保存或删除。</p></div>
  <input type="file" id="fcap" capture="environment" hidden>
  <div id="mrec" onclick="if(event.target===this)closeMusicRec()"><div class="mrec-sheet"><div class="mrec-grab"></div><div class="mrec-state" id="mrecState">正在聆听现场音乐</div><div class="mrec-icon"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div><div id="mrecResult"><div class="mrec-loading" id="mrecLoading">正在识别<i></i><i></i><i></i></div></div><div class="mrec-actions" id="mrecActions" style="display:none"><button onclick="closeMusicRec()">关闭</button><button class="main" onclick="useMusicResult()">使用这首歌</button></div><div class="mrec-demo">演示模式 · 后续可接入外部音乐识别 App</div></div></div><div id="pv"></div><div id="toast"></div>
  <div class="mask" id="mask" onclick="closeSheet()"></div>
@@ -1007,24 +1023,35 @@ async function setMode(m){
   if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false})
 }
 function curLine(){if(!S.length)return["",""];if(st.mic&&st.run&&!st.hasLock)return["",""];var s=S[st.i],c=0;if(s.tm){for(var k=0;k<s.tm.length;k++)if(s.tm[k]<=st.t)c=k}else c=Math.min(s.l.length-1,Math.floor(st.t/STEP));return[s.l[c]||"",s.l[c+1]||""]}
-function drawLyr(g,w,h){var L=curLine();if(!L[0])return;var vr=$("live").getBoundingClientRect(),scale=w/Math.max(1,vr.width),fs=Math.max(12,Math.round(P.fs*(CM.on?.78:1)*scale)),nextFs=Math.round(fs*.76),pad=Math.round(24*scale),x=P.al==="left"?pad:P.al==="right"?w-pad:w/2,y=CM.pos==="top"?Math.round(h*.14):CM.pos==="mid"?Math.round(h*.5):Math.round(h*.78),a=CM.op*(P.dim?P.dimLv:1);
+function drawLyr(g,w,h){var L=curLine();if(!L[0])return;var vr=$("cv").getBoundingClientRect(),vw=vr.width||$("live").getBoundingClientRect().width,scale=w/Math.max(1,vw),fs=Math.max(12,Math.round(P.fs*(CM.on?.78:1)*scale)),nextFs=Math.round(fs*.76),pad=Math.round(24*scale),x=P.al==="left"?pad:P.al==="right"?w-pad:w/2,y=CM.pos==="top"?Math.round(h*.14):CM.pos==="mid"?Math.round(h*.5):Math.round(h*.78),a=CM.op*(P.dim?P.dimLv:1);
 g.save();g.textAlign=P.al==="left"?"left":P.al==="right"?"right":"center";g.textBaseline="middle";g.shadowColor=P.shadow?"rgba(0,0,0,.75)":"transparent";g.shadowBlur=P.shadow?fs*.3:0;g.fillStyle=P.cur;g.globalAlpha=a;g.font=P.fw+" "+fs+"px "+FONTS[P.font];g.fillText(L[0],x,y,w-pad*2);
 if(L[1]){g.globalAlpha=CM.op*(P.dim?P.dimLv*.85:1);g.fillStyle=P.nxc;g.font=P.fw+" "+nextFs+"px "+FONTS[P.font];g.fillText(L[1],x,y+Math.round(fs*P.lh),w-pad*2)}g.restore()}
-function shutter(){if(CM.fb){sysCap();return}if(!CM.stream){toast("摄像头未就绪");return}if(CM.m==="photo")snap();else CM.rec?stopRec():startRec()}
-function snap(){vib(15);var c=document.createElement("canvas");frame(c,CM.burn);var f=$("flash");f.classList.remove("on");void f.offsetWidth;f.classList.add("on");c.toBlob(function(b){if(b)addItem("photo",b,{})},"image/jpeg",.92)}
-function finishRec(){var r=CM.rec,b=new Blob(CM.chunks,{type:r.mimeType||"video/webm"});CM.rec=null;CM.A=null;if(CM.aud&&!st.mic)CM.aud.getTracks().forEach(function(t){t.enabled=false});if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false})
-if(st.tab!=="live")camOff();addItem("video",b,{dur:(Date.now()-CM.t0)/1000,marks:CM.mk.slice(),song:CM.song0,pos:CM.pos0})}
-function addItem(type,blob,x){var it={type:type,blob:blob,url:URL.createObjectURL(blob),ts:Date.now(),song:S[st.i].n,pos:st.t};for(var k in x)it[k]=x[k];CM.items.unshift(it);setThumb();toast(type==="photo"?"已拍照":"已保存视频到相册")}
+function shutter(){if(CM.fb){sysCap();return}if(!CM.stream){toast("摄像头未就绪");return}if(!$("cv").videoWidth){toast("摄像头画面尚未就绪，请稍后再试");return}if(CM.m==="photo")snap();else CM.rec?stopRec():startRec()}
+function snap(){if(!$("cv").videoWidth){toast("摄像头画面尚未就绪");return}vib(15);var c=document.createElement("canvas");frame(c,CM.burn);var f=$("flash");f.classList.remove("on");void f.offsetWidth;f.classList.add("on");c.toBlob(function(b){if(b)addItem("photo",b,{});else toast("拍照失败")},"image/jpeg",.92)}
+function finishRec(){var r=CM.rec,nm=CM.An,dur=(Date.now()-CM.t0)/1000,b=new Blob(CM.chunks,{type:(r&&r.mimeType)||"video/webm"});CM.rec=null;CM.A=null;CM.An=null;CM.out=null;CM.cvs=null;
+if(CM.ratk){try{CM.ratk.stop()}catch(e){}CM.ratk=null}
+try{r&&r.stream&&r.stream.getVideoTracks().forEach(function(t){t.stop()})}catch(e){}
+if(CM.aud&&!st.mic)CM.aud.getTracks().forEach(function(t){t.enabled=false});if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false})
+applyRatioUI();
+if(st.tab!=="live")camOff();
+if(!b.size){toast("录像失败：没有录到数据");return}
+addItem("video",b,{dur:dur,marks:CM.mk.slice(),song:CM.song0,pos:CM.pos0,ratio:nm})}
+function addItem(type,blob,x){var it={type:type,blob:blob,url:URL.createObjectURL(blob),ts:Date.now(),song:curName(),pos:st.t,ratio:ratioName()};for(var k in x)it[k]=x[k];CM.items.unshift(it);setThumb();toast(type==="photo"?"已拍照":"已保存视频到相册")}
 function setThumb(){var it=CM.items[0];$("gal").innerHTML=it?(it.type==="photo"?'<img src="'+it.url+'" style="width:100%;height:100%;object-fit:cover">':"▶"):"▢"}
 function openGal(){renderGal();$("mask").classList.add("on");$("sheet3").classList.add("on")}
-function renderGal(){var h="",n=CM.items.length;if($("galCount"))$("galCount").textContent=n+(n===1?" 个项目":" 个项目");CM.items.forEach(function(it,i){var sub=it.type==="photo"?"照片 · "+fmt(it.pos):"视频 · "+fmt(it.dur||0);if(it.ratio)sub+=" · "+it.ratio;var thumb=it.type==="photo"?'<img src="'+it.url+'">':'<video src="'+it.url+'#t=0.1" muted preload="metadata"></video>';h+='<div class="row gi"><div class="th" onclick="view('+i+')">'+thumb+'</div><div class="t"><b>'+it.song+'</b><span>'+sub+'</span></div><div class="gi-actions"><button onclick="view('+i+')">预览</button><button onclick="saveItem('+i+')">保存</button><button class="red" onclick="askDelItem('+i+')">删除</button></div></div>'});$("gl").innerHTML=h||'<p class="note">还没有拍摄内容</p>'}
-function view(i){var it=CM.items[i];CM.sel=i;var media=it.type==="photo"?'<img src="'+it.url+'">':'<video src="'+it.url+'" controls playsinline autoplay></video>';var acts='<div class="pv-actions"><button class="act g" onclick="saveItem('+i+')">保存</button><button class="act red" onclick="askDelItem('+i+')">删除</button></div>';$('pv').innerHTML=media+acts+'<button class="act" style="width:auto;padding:8px 16px;top:16px;right:16px" onclick="closePreview()">关闭</button>';$('pv').classList.add('on')}
+function renderGal(){var h="",n=CM.items.length;if($("galCount"))$("galCount").textContent=n+(n===1?" 个项目":" 个项目");CM.items.forEach(function(it,i){var sub=it.type==="photo"?"照片 · "+fmt(it.pos):"视频 · "+fmt(it.dur||0);if(it.ratio)sub+=" · "+it.ratio;var thumb=it.type==="photo"?'<img src="'+it.url+'">':'<video src="'+it.url+'#t=0.1" muted preload="metadata"></video>';h+='<div class="row gi"><div class="th" onclick="view('+i+')">'+thumb+'</div><div class="t"><b>'+it.song+'</b><span>'+sub+'</span></div><div class="gi-actions"><button onclick="view('+i+')">预览</button><button onclick="saveItem('+i+')">保存</button><button class="red" onclick="askDelItem('+i+',this)">删除</button></div></div>'});$("gl").innerHTML=h||'<p class="note">还没有拍摄内容</p>'}
+function view(i){var it=CM.items[i];CM.sel=i;var media=it.type==="photo"?'<img src="'+it.url+'">':'<video src="'+it.url+'" controls playsinline autoplay></video>';var acts='<div class="pv-actions"><button class="act g" onclick="saveItem('+i+')">保存</button><button class="act red" onclick="askDelItem('+i+',this)">删除</button></div>';$('pv').innerHTML=media+acts+'<button class="act" style="width:auto;padding:8px 16px;top:16px;right:16px" onclick="closePreview()">关闭</button>';$('pv').classList.add('on')}
 function closePreview(){$("pv").classList.remove("on");$("pv").innerHTML=""}
-function askDelItem(i){if(!CM.items[i])return;if(confirm("删除这份拍摄内容？"))delItem(i)}
-function delItem(i){if(!CM.items[i])return;URL.revokeObjectURL(CM.items[i].url);CM.items.splice(i,1);CM.sel=-1;renderGal();setThumb()}
-function clearGal(){if(!CM.items.length){toast("相册已经是空的");return}if(!confirm("清空全部拍摄内容？"))return;CM.items.forEach(function(it){URL.revokeObjectURL(it.url)});CM.items=[];CM.sel=-1;renderGal();setThumb();toast("已清空相册")}
-function fname(it){var d=new Date(it.ts),p=function(n){return("0"+n).slice(-2)};return"现场同频_"+it.song.replace(/[\\\/:*?"<>|]/g,"")+"_"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+"."+(it.type==="photo"?"jpg":/mp4|quicktime/.test(it.blob.type)?"mp4":"webm")}
-async function saveItem(i){var it=CM.items[i];try{var d=window.claude&&await claude.use("downloads");if(!d){toast("当前环境不支持直接保存，请长按照片或用视频播放器保存");return}await d.save({filename:fname(it),data:it.blob})}catch(e){if(!e||e.code!=="declined")toast("保存失败")}}
+function twoTap(b,label,fn){if(!b){fn();return}if(b.dataset.c==="1"){clearTimeout(b._t);b.dataset.c="";fn();return}b.dataset.c="1";var o=b.textContent;b.textContent=label;clearTimeout(b._t);b._t=setTimeout(function(){b.dataset.c="";b.textContent=o},3000)}
+function askDelItem(i,b){if(!CM.items[i])return;twoTap(b,"再点删除",function(){delItem(i)})}
+function delItem(i){if(!CM.items[i])return;URL.revokeObjectURL(CM.items[i].url);CM.items.splice(i,1);CM.sel=-1;if($("pv").classList.contains("on"))closePreview();renderGal();setThumb()}
+function clearGal(b){if(!CM.items.length){toast("相册已经是空的");return}twoTap(b,"再点清空",function(){CM.items.forEach(function(it){URL.revokeObjectURL(it.url)});CM.items=[];CM.sel=-1;closePreview();renderGal();setThumb();toast("已清空相册")})}
+function fname(it){var d=new Date(it.ts),p=function(n){return("0"+n).slice(-2)};return"现场同频_"+String(it.song||"现场").replace(/[\\\/:*?"<>|]/g,"")+"_"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+"."+(it.type==="photo"?"jpg":/mp4|quicktime/.test(it.blob.type)?"mp4":"webm")}
+async function saveBlob(name,blob){
+  try{var d=window.claude&&claude.use&&await claude.use("downloads");if(d){await d.save({filename:name,data:blob});return true}}catch(e){if(e&&e.code==="declined")return false}
+  try{var u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.style.display="none";document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u)},8000);return true}catch(e){return false}
+}
+async function saveItem(i){var it=CM.items[i];if(!it)return;try{var ok=await saveBlob(fname(it),it.blob);if(ok)toast("已保存："+fname(it))}catch(e){toast("保存失败")}}
 /* ===== 音乐自动识别：演示接口 ===== */
 var MusicRecognition={adapter:null,identify:async function(ctx){if(this.adapter&&typeof this.adapter.identify==="function")return await this.adapter.identify(ctx);return await new Promise(function(resolve){setTimeout(function(){var real=S.filter(function(s){return s.real});if(!real.length){resolve({success:false,message:"暂无已导入歌曲，请先在歌单添加音乐"});return}var q=real[0];resolve({success:true,name:q.n,artist:q.a,score:"演示匹配",id:String(q.id||q.n),source:"demo"})},1050)})}};
 var MREC={open:false,busy:false,last:null};window.LSyncMusicRecognition=MusicRecognition;
@@ -1059,7 +1086,8 @@ function go(t){var prev=st.tab;st.tab=t;for(var k in PG)$(PG[k]).classList.toggl
 document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("on",b.dataset.t===t)});
 if(t==="live")draw();if(prev==="live"&&t!=="live"&&!CM.rec)camOff()}
 function setPos(p){CM.pos=p;var l=$("live");l.classList.remove("top","mid","bot");l.classList.add(p);document.querySelectorAll("#seg button").forEach(function(b){b.classList.toggle("on",b.dataset.p===p)})}
-function camDraw(){if(CM.rec&&(!st.mic||st.hasLock)){var n=S[st.i].n,m=CM.mk;if(!m.length||m[m.length-1].n!==n)m.push({n:n,t:(Date.now()-CM.t0)/1000})}}
+function curName(){var s=S[st.i];return s?s.n:"现场"}
+function camDraw(){if(CM.rec&&(!st.mic||st.hasLock)){var n=curName(),m=CM.mk;if(!m.length||m[m.length-1].n!==n)m.push({n:n,t:(Date.now()-CM.t0)/1000})}}
 
 /* ===== 方向自适应：横屏 / 竖屏拍摄比例 ===== */
 function isPortrait(){try{return window.matchMedia("(orientation:portrait)").matches}catch(e){return window.innerHeight>=window.innerWidth}}
@@ -1075,9 +1103,16 @@ function ratioLabel(){
   if(CM.ratio!=="auto")return CM.ratio;
   return isPortrait()?"自动 · 竖屏 9:16":"自动 · 横屏 16:9"
 }
+function ratioName(){if(CM.rec&&CM.An)return CM.An;var r=CM.ratio||"16:9";if(r==="auto")r=isPortrait()?"9:16":"16:9";return r}
 function crop(){var v=$("cv"),sw=v.videoWidth||1280,sh=v.videoHeight||720,A=curRatio(),cw=sw,ch=sh;if(sw/sh>A)cw=Math.round(sh*A);else ch=Math.round(sw/A);return{sx:(sw-cw)/2,sy:(sh-ch)/2,cw:cw,ch:ch}}
-function frame(c,withL,max){var v=$("cv"),r=crop(),k=max?Math.min(1,max/Math.max(r.cw,r.ch)):1,W=Math.max(2,Math.round(r.cw*k/2)*2),H=Math.max(2,Math.round(r.ch*k/2)*2);
+/* out 给定时输出尺寸固定（录像全程不变）；否则按取景裁切区域的原始分辨率输出（拍照） */
+function frame(c,withL,out){var v=$("cv"),r=crop(),W,H;
+if(out){W=out.w;H=out.h}else{W=Math.max(2,Math.round(r.cw/2)*2);H=Math.max(2,Math.round(r.ch/2)*2)}
 if(c.width!==W||c.height!==H){c.width=W;c.height=H}var g=c.getContext("2d");g.save();if(CM.mir){g.translate(W,0);g.scale(-1,1)}g.drawImage(v,r.sx,r.sy,r.cw,r.ch,0,0,W,H);g.restore();if(withL)drawLyr(g,W,H)}
+/* 取景框：在现场页内按所选比例做 contain 适配，与保存的照片/视频裁切一致 */
+function layoutCam(){var v=$("cv"),l=$("live");if(!v||!l)return;var a=curRatio(),cw=l.clientWidth,ch=l.clientHeight;if(!cw||!ch)return;var w=cw,h=w/a;if(h>ch){h=ch;w=h*a}
+v.style.width=Math.round(w)+"px";v.style.height=Math.round(h)+"px";v.style.left="50%";v.style.top="50%";v.style.transform=CM.mir?"translate(-50%,-50%) scaleX(-1)":"translate(-50%,-50%)"}
+function cycleRatio(){if(CM.rec){toast("录像中无法切换比例");return}var R=["auto","16:9","4:3","1:1","9:16"],i=R.indexOf(P.ratio);setP("ratio",R[(i+1)%R.length]);toast("拍摄比例："+(P.ratio==="auto"?"自动（"+ratioName()+"）":P.ratio))}
 
 /* 打开摄像头 / 补音频轨
    - 已有可用视频流且不需要音频 → 直接复用，避免重复授权
@@ -1119,28 +1154,44 @@ var curId=se.deviceId||CM.dev,candidate=devs.find(function(d){return d.deviceId!
 CM.dev=candidate.deviceId;CM.face=CM.face==="user"?"environment":"user";var audioTrack=CM.stream.getAudioTracks()[0]||null,old=CM.stream;CM.stream=null;tr.stop();var s=await openCam(!!audioTrack,CM.face);
 if(s&&audioTrack&&!s.getAudioTracks().length){s=new MediaStream([s.getVideoTracks()[0],audioTrack]);CM.stream=s;$("cv").srcObject=s;if(CM.face==="user")CM.mir=true;applyRatioUI()}
 if(CM.stream&&!st.mic&&CM.stream.getAudioTracks().length)CM.stream.getAudioTracks()[0].enabled=false}
-async function camOn(){CM.on=true;CM.ico=CM.ico||$("camBtn").innerHTML;CM.ratio=P.ratio||"16:9";$("app").classList.add("cam");$("live").classList.add("cam");setPos(CM.pos);applyRatioUI();$("camBtn").innerHTML="✕";$("camBtn").classList.add("on");$("cc").style.display="block";$("la").style.display="none";draw();var needAudio=!st.stream&&(st.mic||CM.m==="video");await openCam(needAudio,CM.face);if(st.mic&&CM.stream&&CM.stream.getAudioTracks().length&&!st.stream)openMic();else if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false});if(!st.run)start()}
+async function camOn(){CM.on=true;CM.ico=CM.ico||$("camBtn").innerHTML;CM.ratio=P.ratio||"16:9";$("app").classList.add("cam");$("live").classList.add("cam");setPos(CM.pos);applyRatioUI();$("camBtn").innerHTML="✕";$("camBtn").classList.add("on");$("cc").style.display="block";$("la").style.display="none";draw();var needAudio=!st.stream&&(st.mic||CM.m==="video");await openCam(needAudio,CM.face);if(st.mic&&CM.stream&&CM.stream.getAudioTracks().length&&!st.stream)openMic();else if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false});if(!st.run&&S.length&&(!st.mic||S.some(function(s){return s.real})))start()}
 function camOff(){if(CM.rec)return;closeMusicRec();CM.on=false;$("app").classList.remove("cam");$("live").classList.remove("cam","top","mid","bot");$("camBtn").innerHTML=CM.ico||"";$("camBtn").classList.remove("on");$("aa").classList.remove("on");$("cc").style.display="none";$("la").style.display="";closeCam();draw()}
 function toggleCam(){if(CM.rec){toast("请先停止录像");return}CM.on?camOff():camOn()}
 function togBurn(){CM.burn=!CM.burn;$("burn").classList.toggle("on",CM.burn)}
 function rtUI(on){vib(on?[20,30,20]:25);var b=$("rt");b.classList.toggle("snap",on);b.textContent=on?"":"⟲";b.setAttribute("aria-label",on?"录像中拍照":"切换摄像头")}
 function rightBtn(){CM.rec?snap():flipCam()}
-async function startRec(){if(!window.MediaRecorder){toast("此浏览器不支持录像");return}
-if(CM.rec){return}
-var at=st.stream?st.stream.getAudioTracks()[0]:null;
-if(!at&&CM.stream){at=CM.stream.getAudioTracks()[0]||null}
-if(!at&&CM.aud){at=CM.aud.getAudioTracks()[0]||null}
-if(!at&&CM.on){await openCam(true);if(CM.stream)at=CM.stream.getAudioTracks()[0]||null}
-if(!at){try{if(!CM.audReq)CM.audReq=navigator.mediaDevices.getUserMedia({audio:true});CM.aud=await CM.audReq;if(CM.aud)CM.audReq=null;at=CM.aud&&CM.aud.getAudioTracks()[0]}catch(e){CM.audReq=null;toast("无法录音，将录制无声视频")}}
-if(at)at.enabled=true;
-CM.A=ratioVal(CM.ratio);CM.cvs=document.createElement("canvas");frame(CM.cvs,CM.burn,P.q);var vt=CM.cvs.captureStream(30).getVideoTracks();
-var mt=["video/mp4","video/webm;codecs=vp9,opus","video/webm"].filter(function(t){return MediaRecorder.isTypeSupported(t)})[0];
-CM.chunks=[];CM.mk=[];CM.t0=Date.now();CM.pos0=st.t;CM.song0=S[st.i].n;
-CM.rec=new MediaRecorder(new MediaStream(vt.concat(at?[at]:[])),mt?{mimeType:mt}:{});
-CM.rec.ondataavailable=function(e){if(e.data.size)CM.chunks.push(e.data)};CM.rec.onstop=finishRec;CM.rec.start(1000);
-CM.fi=setInterval(function(){frame(CM.cvs,CM.burn,MS())},33);
-$("shut").classList.add("rec");$("rtm").style.display="flex";rtUI(true);CM.tm=setInterval(function(){$("ct").textContent=fmt((Date.now()-CM.t0)/1000)},500)}
-function stopRec(){if(!CM.rec)return;clearInterval(CM.tm);clearInterval(CM.fi);$("shut").classList.remove("rec");$("rtm").style.display="none";rtUI(false);CM.rec.stop()}
+function liveAt(x){try{var t=x&&x.getAudioTracks&&x.getAudioTracks()[0];return t&&t.readyState==="live"?t:null}catch(e){return null}}
+async function startRec(){
+if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){toast("此浏览器不支持录像");return}
+if(CM.rec||CM.starting)return;
+if(!$("cv").videoWidth){toast("摄像头画面尚未就绪，请稍后再试");return}
+CM.starting=true;var rat=null;
+try{
+var at=liveAt(st.stream)||liveAt(CM.stream)||liveAt(CM.aud);
+if(!at&&CM.on){await openCam(true);at=liveAt(CM.stream)}
+if(!at)toast("未获得麦克风，将录制无声视频");
+/* 复制音轨：录像过程中即使停止同频识别，声音也不会中断 */
+if(at){rat=at.clone();rat.enabled=true}
+CM.A=ratioVal(CM.ratio);CM.An=ratioName();
+var r0=crop(),sh=Math.min(r0.cw,r0.ch),tg=Math.min(P.q||1080,sh),k=tg/sh;
+CM.out={w:Math.max(2,Math.round(r0.cw*k/2)*2),h:Math.max(2,Math.round(r0.ch*k/2)*2)};
+CM.cvs=document.createElement("canvas");frame(CM.cvs,CM.burn,CM.out);
+var vt=CM.cvs.captureStream(30).getVideoTracks();
+var mt=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm","video/mp4"].filter(function(t){return MediaRecorder.isTypeSupported(t)})[0];
+var ms=new MediaStream(vt.concat(rat?[rat]:[])),opts=mt?{mimeType:mt}:{},rec;opts.videoBitsPerSecond=CM.out.w*CM.out.h>1000000?6000000:3000000;
+try{rec=new MediaRecorder(ms,opts)}catch(e1){rec=new MediaRecorder(ms)}
+CM.chunks=[];CM.mk=[];CM.t0=Date.now();CM.pos0=st.t;CM.song0=curName();CM.ratk=rat;
+rec.ondataavailable=function(e){if(e.data&&e.data.size)CM.chunks.push(e.data)};
+rec.onstop=finishRec;
+rec.onerror=function(){toast("录像出错，已停止");stopRec()};
+CM.rec=rec;rec.start(1000);
+CM.fi=setInterval(function(){if(CM.cvs)frame(CM.cvs,CM.burn,CM.out)},33);
+$("shut").classList.add("rec");$("rtm").style.display="flex";rtUI(true);applyRatioUI();CM.tm=setInterval(function(){$("ct").textContent=fmt((Date.now()-CM.t0)/1000)},500)
+}catch(e){
+if(rat){try{rat.stop()}catch(_){}}CM.ratk=null;CM.A=null;CM.An=null;CM.out=null;CM.cvs=null;CM.rec=null;clearInterval(CM.fi);
+toast("无法开始录像（"+(e&&(e.name||e.message)||"未知错误")+"）")
+}finally{CM.starting=false}}
+function stopRec(){if(!CM.rec)return;clearInterval(CM.tm);clearInterval(CM.fi);$("shut").classList.remove("rec");$("rtm").style.display="none";rtUI(false);try{CM.rec.stop()}catch(e){finishRec()}}
 /* ===== 个性化 / 权限诊断 / 兜底 ===== */
 /* 真实识别默认开启（mic:true） */
 var P={theme:"dark",accent:"auto",bg:"black",font:"sys",fs:34,fw:700,lh:1.35,al:"left",cur:"#ffffff",nxc:"#8e8e93",prev:true,nx:2,shadow:true,dim:true,dimLv:.82,wake:true,haptic:true,cam:"environment",q:1080,ratio:"auto",pos:"bot",op:.85,burn:false,mic:true,dbg:false};
@@ -1166,7 +1217,7 @@ var SC=[{g:"快速方案",x:"pre"},
 {g:"权限与环境",x:"dg",dev:true},{g:"数据",x:"data"},{g:"关于",x:"about"}];
 var DGH='<div class="group"><div class="row" onclick="diag()"><div class="t" style="color:var(--blue)">运行环境诊断</div></div><div class="row" onclick="testMedia(\'audio\')"><div class="t" style="color:var(--blue)">测试麦克风授权</div></div><div class="row" onclick="testMedia(\'video\')"><div class="t" style="color:var(--blue)">测试摄像头授权</div></div></div><p class="note" id="dg">授权弹窗弹不出来时，先运行诊断。</p>';
 var DTH='<div class="group"><div class="row" onclick="exportP()"><div class="t" style="color:var(--blue)">导出个性化配置</div></div><label class="row"><div class="t" style="color:var(--blue)">导入个性化配置</div><input type="file" accept=".json" hidden onchange="impP(this)"></label><div class="row" onclick="resetP()"><div class="t" style="color:var(--red)">恢复默认设置</div></div></div><button class="btn g" id="clr" onclick="clearAll()" style="display:none;color:var(--red)">删除全部已导入歌曲</button><p class="note">个性化设置自动保存在本机浏览器；导入的歌曲与相册刷新后不保留。</p>';
-var ABOUT='<div class="about-card"><div class="about-mark">LIVE<br>SYNC</div><div class="about-copy"><b>现场同频</b><span>版本 v2.4.0</span><span>开发者 · Cheung &amp; Neom</span></div></div><div class="about-meta"><span>现场歌词 · 音乐识别 · 实时拍摄</span><span>本地优先 · 隐私友好</span></div>';
+var ABOUT='<div class="about-card"><div class="about-mark">LIVE<br>SYNC</div><div class="about-copy"><b>现场同频</b><span>版本 v2.5.0</span><span>开发者 · Cheung &amp; Neom</span></div></div><div class="about-meta"><span>现场歌词 · 音乐识别 · 实时拍摄</span><span>本地优先 · 隐私友好</span></div>';
 function ctl(it){var k=it.k,v=P[k];
 if(it.t==="sw")return'<div class="sw'+(v?" on":"")+'" onclick="setP(\''+k+'\',!P.'+k+')"></div>';
 if(it.t==="seg")return'<div class="seg2'+(it.w5?" w5":"")+'">'+it.o.map(function(o,i){return'<button class="'+(String(o[0])===String(v)?"on":"")+'" onclick="setP(\''+k+'\',IT.'+k+'.o['+i+'][0])">'+o[1]+'</button>'}).join("")+'</div>';
@@ -1174,7 +1225,7 @@ if(it.t==="sel")return'<select onchange="setP(\''+k+'\',this.value)">'+it.o.map(
 if(it.t==="rng")return'<input type="range" min="'+it.min+'" max="'+it.max+'" step="'+it.step+'" value="'+v+'" oninput="setP(\''+k+'\',+this.value,1)"><span class="rv" id="rv-'+k+'">'+v+'</span>';
 if(it.t==="col")return'<input type="color" value="'+v+'" oninput="setP(\''+k+'\',this.value,1)">';
 return'<div class="sws">'+it.o.map(function(c){return'<button class="'+(c===v?"on":"")+'" style="background:'+(c==="auto"?"conic-gradient(#ff375f,#ff9f0a,#30d158,#64d2ff,#bf5af2,#ff375f)":c)+'" onclick="setP(\''+k+'\',\''+c+'\')" aria-label="'+c+'"></button>'}).join("")+'</div>'}
-function setSummary(g){if(g.g==="外观")return (P.theme==="auto"?"自动外观":P.theme==="light"?"浅色":"深色")+" · 强调色";if(g.g==="歌词样式"){var bg={black:"纯黑",navy:"深蓝",plum:"深紫",forest:"墨绿",ash:"深灰",white:"白天"}[P.bg]||"纯黑";var fn={sys:"系统字体",round:"圆体",serif:"宋体",kai:"楷体",mono:"等宽"}[P.font]||"系统字体";return bg+" · "+fn+" · "+P.fs+"pt"}if(g.g==="现场与相机")return (P.cam==="user"?"前置":"后置")+" · "+P.q+"p · "+(P.ratio==="auto"?(isPortrait()?"自动（竖 9:16）":"自动（横 16:9）"):P.ratio)+" · 歌词"+(P.pos==="top"?"上":P.pos==="mid"?"中":"下");if(g.g==="识别与调试")return (P.mic?"真实识别已开启":"模拟识别")+" · 调试面板"+(P.dbg?"开":"关");if(g.g==="权限与环境")return "HTTPS、页面策略与设备授权";if(g.g==="数据")return "导入、导出、恢复默认";if(g.g==="关于")return "v2.4.0 · Cheung & Neom"} 
+function setSummary(g){if(g.g==="外观")return (P.theme==="auto"?"自动外观":P.theme==="light"?"浅色":"深色")+" · 强调色";if(g.g==="歌词样式"){var bg={black:"纯黑",navy:"深蓝",plum:"深紫",forest:"墨绿",ash:"深灰",white:"白天"}[P.bg]||"纯黑";var fn={sys:"系统字体",round:"圆体",serif:"宋体",kai:"楷体",mono:"等宽"}[P.font]||"系统字体";return bg+" · "+fn+" · "+P.fs+"pt"}if(g.g==="现场与相机")return (P.cam==="user"?"前置":"后置")+" · "+P.q+"p · "+(P.ratio==="auto"?(isPortrait()?"自动（竖 9:16）":"自动（横 16:9）"):P.ratio)+" · 歌词"+(P.pos==="top"?"上":P.pos==="mid"?"中":"下");if(g.g==="识别与调试")return (P.mic?"真实识别已开启":"模拟识别")+" · 调试面板"+(P.dbg?"开":"关");if(g.g==="权限与环境")return "HTTPS、页面策略与设备授权";if(g.g==="数据")return "导入、导出、恢复默认";if(g.g==="关于")return "v2.5.0 · Cheung & Neom"} 
 function toggleSet(g){SET_OPEN[g]=!SET_OPEN[g];try{localStorage.setItem("lsync.set.open",JSON.stringify(SET_OPEN))}catch(e){}renderSet()}
 function renderSet(){var h="";SC.forEach(function(g){
   if(!DEV&&g.dev)return;
@@ -1198,17 +1249,19 @@ function setP(k,v,live){P[k]=v;if(k==="bg"){var w=v==="white";if(w&&P.cur==="#ff
 save();onP(k);if(live){var e=$("rv-"+k);if(e)e.textContent=v}else rerender()}
 function applyPreset(i){Object.assign(P,PRE[i][1]);save();for(var k in P)onP(k);rerender();toast("已应用「"+PRE[i][0]+"」")}
 function resetP(){for(var k in DEF)P[k]=DEF[k];save();for(var k2 in P)onP(k2);rerender();toast("已恢复默认设置")}
-async function exportP(){try{var d=window.claude&&await claude.use("downloads");if(!d){toast("当前环境不支持保存文件");return}await d.save({filename:"现场同频-个性化.json",data:JSON.stringify(P,null,1)})}catch(e){if(!e||e.code!=="declined")toast("导出失败")}}
+async function exportP(){try{var ok=await saveBlob("现场同频-个性化.json",new Blob([JSON.stringify(P,null,1)],{type:"application/json"}));if(ok)toast("已导出个性化配置")}catch(e){toast("导出失败")}}
 async function impP(el){var f=el.files[0];el.value="";if(!f)return;try{var o=JSON.parse(await f.text()),n=0;for(var k in o)if(k in DEF&&typeof o[k]===typeof DEF[k]){P[k]=o[k];n++}save();for(var k2 in P)onP(k2);rerender();toast("已导入 "+n+" 项设置")}catch(e){toast("配置文件无法读取")}}
 function vib(n){if(P.haptic&&navigator.vibrate){try{navigator.vibrate(n)}catch(e){}}}
-function mediaSize(){var a=curRatio(),m=P.q,w=a>=1?Math.round(m*a):m,h=a>=1?m:Math.round(m/a);return{width:Math.max(2,w),height:Math.max(2,h)}}
+/* 请求固定的横向 16:9 传感器分辨率，切换比例时无需重开摄像头；实际取景由 crop() 居中裁切 */
+function mediaSize(){var m=P.q||1080;return{width:Math.round(m*16/9),height:m}}
 function MS(){return mediaSize().width}
-function applyRatioUI(){var a=ratioVal(CM.ratio);document.documentElement.style.setProperty("--cam-ratio",a);var v=$("cv");if(v){v.style.aspectRatio=a;v.style.transform=CM.mir?"translate(-50%,-50%) scaleX(-1)":"translate(-50%,-50%)"}}
+function applyRatioUI(){var a=curRatio();document.documentElement.style.setProperty("--cam-ratio",a);layoutCam();var b=$("ratioBtn");if(b){b.textContent=(CM.ratio==="auto"?"自动 ":"")+ratioName();b.style.opacity=CM.rec?.4:1}}
 async function wake(){try{if(P.wake&&st.run&&navigator.wakeLock&&!WL){WL=await navigator.wakeLock.request("screen");WL.addEventListener("release",function(){WL=null})}else if((!P.wake||!st.run)&&WL){await WL.release();WL=null}}catch(e){}}
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")wake()});
 /* 方向变化：自动比例跟随屏幕方向；录像中锁定比例并提示 */
 function onOrient(){
-  if(P.ratio==="auto"){CM.ratio="auto";applyRatioUI()}
+  if(P.ratio==="auto")CM.ratio="auto";
+  applyRatioUI();
   if(CM.rec){clearTimeout(CM._rt);CM._rt=setTimeout(function(){toast("录像中画面比例已锁定，请保持手机方向")},300)}
   else draw()
 }
@@ -1226,7 +1279,7 @@ async function testMedia(kind){var el=$("dg"),has=kind==="audio"?((st.stream&&st
 try{var s=await navigator.mediaDevices.getUserMedia(kind==="audio"?{audio:true}:{video:true});s.getTracks().forEach(function(t){t.stop()});el.textContent=(kind==="audio"?"麦克风":"摄像头")+"授权成功，可正常使用。"}
 catch(e){el.textContent=(kind==="audio"?"麦克风":"摄像头")+"请求失败："+(e&&e.name||"未知")+"（"+eh(e)+"）。若 Edge 已拒绝过，请在 设置 > 网站权限 中改为允许后刷新。"}}
 function sysCap(){var f=$("fcap");f.accept=CM.m==="photo"?"image/*":"video/*";f.setAttribute("capture",CM.face==="user"?"user":"environment");f.value="";f.click()}
-$("fcap").onchange=function(e){var f=e.target.files[0];if(!f)return;var t=f.type.indexOf("video")===0?"video":"photo";addItem(t,f,{});var it=CM.items[0];
+$("fcap").onchange=function(e){var f=e.target.files[0];if(!f)return;var t=f.type.indexOf("video")===0?"video":"photo";addItem(t,f,{ratio:""});var it=CM.items[0];
 if(t==="video"){var v=document.createElement("video");v.preload="metadata";v.onloadedmetadata=function(){it.dur=v.duration;renderGal()};v.src=it.url}};
 async function feedFile(f){if(!f)return;if(!S.some(function(s){return s.real})){toast("请先导入对应的歌曲");return}
 try{var ab=await f.arrayBuffer(),C=window.OfflineAudioContext||window.webkitOfflineAudioContext,b=await new Promise(function(r,j){new C(1,1,SR).decodeAudioData(ab,r,j)}),x=ds(b.getChannelData(0),b.sampleRate),pos=0;
@@ -1363,9 +1416,11 @@ function animateLyricState(){
 
 /* Override the visual part of draw(): functional state remains identical. */
 var _drawCore=draw;
+var _thSig="";
 draw=function(){
   _drawCore();
-  refreshChromaTheme();
+  var sg=[P.bg,P.cur,P.nxc,P.accent,P.theme,P.font,P.fw,P.lh,P.al,P.shadow,_sceneIsLight()].join("|");
+  if(sg!==_thSig){_thSig=sg;refreshChromaTheme()}
   animateLyricState();
 };
 
@@ -1428,6 +1483,7 @@ if(window.ResizeObserver){
   if(_nav)new ResizeObserver(function(){syncNavSpace();}).observe(_nav);
 }
 
+if(window.ResizeObserver)new ResizeObserver(function(){if(CM.on)layoutCam()}).observe($("live"));
 st.mic=P.mic;CM.face=P.cam;CM.pos=P.pos;CM.op=P.op;CM.ratio=P.ratio||"auto";CM.burn=P.burn;
 applyDevFlag();st.dbg=P.dbg&&DEV;
 applyRatioUI();$("burn").classList.toggle("on",P.burn);applyStyle();renderSet();
