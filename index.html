@@ -1585,7 +1585,7 @@ function syncOrient(){
   if(lk){
     var ccw;if(typeof window.orientation==="number")ccw=window.orientation===90;else ccw=!(screen.orientation&&screen.orientation.angle===270);
     var w=innerHeight,h=innerWidth;
-    app.style.cssText="position:fixed;left:0;top:0;margin:0;max-width:none;border-radius:0;box-shadow:none;transform-origin:0 0;width:"+w+"px;height:"+h+"px;transform:"+(ccw?"translateX("+h+"px) rotate(90deg)":"translateY("+w+"px) rotate(-90deg)");
+    app.style.cssText="position:fixed;left:0;top:0;margin:0;max-width:none;border-radius:0;box-shadow:none;transform-origin:0 0;width:"+w+"px;height:"+h+"px;transform:"+(!ccw?"translateX("+h+"px) rotate(90deg)":"translateY("+w+"px) rotate(-90deg)");
   }else if(app.style.cssText)app.style.cssText="";
   var want=CM.on?"free":"portrait";
   if(want!==_lockState){_lockState=want;
