@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>现场同频 · v2.3</title>
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--tx:#000;--tx2:#8e8e93;--sep:rgba(60,60,67,.18);--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--bar:rgba(249,249,249,.85)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--tx:#fff;--tx2:#8e8e93;--sep:rgba(84,84,88,.6);--blue:#0a84ff;--bar:rgba(29,29,30,.85)}}
+:root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--tx:#fff;--tx2:#8e8e93;--sep:rgba(84,84,88,.6);--blue:#0a84ff;--bar:rgba(29,29,30,.85)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:#d1d1d6;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;color:var(--tx)}
+#app{position:relative;height:100%;max-width:430px;margin:0 auto;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+@media (min-width:500px) and (min-height:560px){#app{height:min(860px,96%);margin-top:2vh;border-radius:44px;box-shadow:0 0 0 10px #111,0 20px 60px rgba(0,0,0,.35)}}
+.page{flex:1;overflow-y:auto;padding:0 16px 24px;display:none}.page.on{display:block}
+h1{font-size:34px;font-weight:700;letter-spacing:.3px;margin:28px 0 14px}
+.lbl{font-size:13px;color:var(--tx2);margin:22px 16px 6px}
+.group{background:var(--card);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:52px;position:relative;cursor:pointer}
+.row+.row:before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--sep)}
+.row .t{flex:1;min-width:0}.row .t b{display:block;font-weight:500;font-size:17px}.row .t span{font-size:13px;color:var(--tx2)}
+.chk{color:var(--blue);font-size:20px}
+.pill{font-size:13px;color:var(--tx2)}
+.tabbar{display:flex;background:var(--bar);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:.5px solid var(--sep);padding:6px 0 10px}
+.tab{flex:1;text-align:center;font-size:10px;color:var(--tx2);cursor:pointer;border:0;background:none;padding:2px 0}
+.tab svg{display:block;margin:0 auto 2px;width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--blue)}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:15px;font-size:17px;font-weight:600;background:var(--blue);color:#fff;margin-top:14px;cursor:pointer}
+.btn.g{background:var(--card);color:var(--blue)}
+.btn:active{opacity:.7}
+/* live */
+#live{background:#000;color:#fff;padding:0;--tx2:#8e8e93}
+#live.on{display:flex;flex-direction:column}
+.lhead{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 0}
+.status{display:flex;align-items:center;gap:8px;font-size:14px;color:#ebebf5cc}
+.dot{width:9px;height:9px;border-radius:50%;background:#636366}
+.dot.listening{background:var(--orange);animation:pulse 1s infinite}.dot.locked{background:var(--green)}.dot.lost{background:var(--red)}
+@keyframes pulse{50%{opacity:.3}}
+.meter{display:flex;gap:3px;align-items:flex-end;height:18px}.meter i{width:4px;background:#48484a;border-radius:2px;height:4px;transition:height .08s}
+.song{padding:6px 20px 0;color:#8e8e93;font-size:14px}
+.lyrics{flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;padding:0 24px;text-align:left}
+.ln{font-size:22px;font-weight:600;color:#3a3a3c;transition:all .35s ease;line-height:1.35}
+.ln.cur{font-size:34px;font-weight:700;color:#fff}.ln.nx{font-size:26px;color:#8e8e93}.ln.pv{color:#48484a}
+.prog{height:3px;background:#2c2c2e;margin:0 24px;border-radius:2px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:#fff;transition:width .2s linear}
+.lact{display:flex;gap:10px;padding:16px 20px 20px}
+.lact button{flex:1;border:0;border-radius:14px;padding:14px 0;font-size:15px;font-weight:600;background:#1c1c1e;color:#0a84ff;cursor:pointer}
+.lact button.main{background:#0a84ff;color:#fff}
+/* 调试面板（仅开发模式可见） */
+.dbg{margin:0 20px 8px;padding:10px 12px;border-radius:10px;background:#1c1c1e;font:12px/1.6 ui-monospace,Menlo,monospace;color:#8e8e93;display:none;max-height:38%;overflow:auto}
+.dbg label{display:flex;align-items:center;gap:8px;margin-top:8px;color:#ebebf5}
+.dbg input[type=range]{flex:1;min-width:0}
+.dbg select{flex:1;min-width:0;background:#2c2c2e;color:#fff;border:0;border-radius:8px;padding:6px}
+.dbg b{color:#fff;font-weight:600;min-width:2.2em}
+.dbg .act{background:#2c2c2e}
+/* sheet */
+.mask{position:absolute;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s;z-index:5}
+.mask.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);color:var(--tx);border-radius:14px 14px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .35s cubic-bezier(.32,.72,0,1);z-index:6}
+.sheet.on{transform:none}.grab{width:36px;height:5px;border-radius:3px;background:var(--sep);margin:0 auto 10px}
+.sheet h3{margin:6px 0 12px;font-size:17px;text-align:center}
+.sw{width:51px;height:31px;border-radius:16px;background:#78788033;position:relative;transition:.25s;flex:none}
+.sw:after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.3);transition:.25s}
+.sw.on{background:var(--green)}.sw.on:after{left:22px}
+.note{font-size:13px;color:var(--tx2);margin:8px 16px;line-height:1.5}
+.imp{display:block;text-align:center;color:var(--blue);padding:14px;font-size:17px;cursor:pointer}
+.more{width:30px;height:30px;border-radius:50%;border:0;background:var(--bg);color:var(--blue);font-size:18px;line-height:1;cursor:pointer;flex:none}.sheet input[type=text]{width:100%;padding:12px 14px;border-radius:10px;border:0;background:var(--card);color:var(--tx);font-size:17px}.act{display:block;width:100%;border:0;border-radius:14px;padding:15px;font-size:17px;background:var(--card);color:var(--blue);margin-top:8px;cursor:pointer}.act.red{color:var(--red)}
+.recd{width:9px;height:9px;border-radius:50%;background:#ff3b30;animation:pulse 1s infinite}
+.copt{display:flex;align-items:center;gap:10px;justify-content:center;font-size:13px;margin-bottom:8px}
+.seg{display:flex;background:rgba(118,118,128,.4);border-radius:8px;padding:2px}.seg button{border:0;background:none;color:#fff;font-size:13px;padding:4px 10px;border-radius:6px}.seg button.on{background:#636366}
+.cmode{display:flex;justify-content:center;gap:22px;margin-bottom:10px}.cmode button{border:0;background:none;color:#fff;font-size:15px;font-weight:600;opacity:.7}.cmode button.on{color:#ffd60a;opacity:1}
+.crow{display:flex;align-items:center;justify-content:space-around}
+.shut{width:72px;height:72px;border-radius:50%;border:4px solid #fff;background:none;padding:0;position:relative}.shut:after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff;transition:.2s}
+.shut.v:after{background:#ff3b30}.shut.rec:after{inset:20px;border-radius:6px;background:#ff3b30}
+.cb{width:46px;height:46px;border-radius:12px;border:0;background:rgba(118,118,128,.5);color:#fff;font-size:20px;overflow:hidden;padding:0}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}.flash.on{animation:fl .25s}@keyframes fl{from{opacity:.8}to{opacity:0}}
+#toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:rgba(60,60,67,.92);color:#fff;padding:9px 16px;border-radius:18px;font-size:14px;opacity:0;transition:opacity .25s;z-index:9;pointer-events:none;max-width:90%;text-align:center}#toast.on{opacity:1}
+.gi .th{width:64px;height:64px;border-radius:8px;overflow:hidden;background:#000;flex:none}.gi .th img,.gi .th video{width:100%;height:100%;object-fit:cover}.gi>button{border:0;background:none;color:var(--blue);font-size:15px}
+#pv{position:absolute;inset:0;background:#000;z-index:8;display:none;flex-direction:column;align-items:center;justify-content:center}#pv.on{display:flex}#pv img,#pv video{max-width:100%;max-height:80%}#pv button{position:absolute;top:16px;right:16px}
+#live>*{position:relative;z-index:1}#live>video{position:absolute;z-index:0;top:50%;left:50%;right:auto;bottom:auto;width:auto;height:min(100%,calc(100% / var(--cam-ratio,1.7777778)));max-width:100%;max-height:100%;aspect-ratio:var(--cam-ratio,1.7777778);object-fit:cover;display:none;background:#111}#live.cam>video{display:block}#live>.flash{position:absolute;inset:0;z-index:3}
+#live.cam.sh .ln{text-shadow:0 1px 10px rgba(0,0,0,.85)}#live.cam .ln.pv{color:#ffffff88}
+#live.cam.top .lyrics{justify-content:flex-start;padding-top:14px}#live.cam.bot .lyrics{justify-content:flex-end;padding-bottom:14px}
+#cc{padding:8px 16px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65))}
+.camb{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.14);color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.camb:active{opacity:.7}.camb.on{background:rgba(120,120,128,.58);border-color:rgba(255,255,255,.3)}.camb svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#app.cam .tabbar{display:none}#live.cam .song,#live.cam .prog,#live.cam .meter,#live.cam .dbg{display:none!important}
+#aa{display:none;margin:8px 16px 0;padding:6px 14px 12px;border-radius:14px;background:rgba(28,28,30,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}#aa.on{display:block}
+.aal{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;margin-top:10px}.aal input[type=range]{flex:1;max-width:160px}
+.cb.snap{background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center}.cb.snap:after{content:"";width:30px;height:30px;border-radius:50%;border:2px solid #000}
+.lact button.main{flex:2}
+.navrow{display:flex;align-items:flex-end;justify-content:space-between}.addb{color:var(--blue);font-size:17px;padding:0 4px 14px;cursor:pointer}
+#live{background:var(--lbg,#000);color:var(--ltx,#fff)}.status{color:inherit;opacity:.85}
+.lyrics{font-family:var(--lfont,inherit);text-align:var(--lal,left)}.ln{font-weight:var(--lw,600);line-height:var(--llh,1.35)}.ln.cur{color:var(--lcur,#fff);font-weight:var(--lw,700)}.ln.nx{color:var(--lnx,#8e8e93)}
+#live.lt .lact button,#live.lt .camb{background:#e5e5ea;color:#007aff}#live.lt .song{color:#6c6c70}
+.seg2{display:flex;background:var(--bg);border-radius:8px;padding:2px;gap:2px}.seg2 button{border:0;background:none;color:var(--tx);font-size:13px;padding:5px 9px;border-radius:6px;cursor:pointer}.seg2 button.on{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.25);color:var(--blue);font-weight:600}
+.sws{display:flex;gap:8px}.sws button{width:24px;height:24px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer}.sws button.on{border-color:var(--tx)}
+#setc select{background:var(--bg);color:var(--tx);border:0;border-radius:8px;padding:6px 8px;font-size:15px}#setc input[type=range]{width:130px}#setc input[type=color]{width:38px;height:30px;border:0;background:none;padding:0}
+.rv{font-size:13px;color:var(--tx2);width:40px;text-align:right}.chip{flex:1;border:0;border-radius:10px;padding:10px 6px;font-size:14px;font-weight:600;background:var(--bg);color:var(--blue);cursor:pointer}.row.pre{gap:8px}
+.setsec{margin:0 0 10px}
+.sethead{display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;border:0;border-radius:12px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer}
+.sethead:active{opacity:.7}
+.sethead .t{flex:1;min-width:0}
+.sethead b{display:block;font-size:17px;font-weight:600}
+.sethead .setsummary{display:block;margin-top:2px;font-size:13px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sethead .setchev{font-size:24px;line-height:1;color:var(--tx2);transform:rotate(90deg);transition:transform .2s ease}
+.setsec.closed .setchev{transform:rotate(0)}
+.setbody{margin-top:6px}
+.setbody>.group{margin-top:0}
+.setsec .note{margin-bottom:0}
+/* 开发模式指示（仅开发模式显示） */
+.devb{display:none;font-size:12px;color:var(--orange);font-weight:600;margin-left:10px;vertical-align:middle}
+:root[data-dev="1"] .devb{display:inline}
+/* 5 段式分段控件在小屏收紧 */
+.seg2.w5 button{padding:5px 6px;font-size:12px}
+
+@media (orientation:landscape) and (max-height:559px){
+#app{max-width:none;flex-direction:row;height:100%}
+.tabbar{order:2;flex-direction:column;justify-content:center;gap:12px;width:calc(78px + env(safe-area-inset-right,0px));padding:10px env(safe-area-inset-right,0px) 10px 0;border-top:0;border-left:.5px solid var(--sep);border-right:0;flex:none}
+.tab{flex:none;min-height:52px}
+.page{padding:0 16px max(16px,env(safe-area-inset-bottom,0px)) 16px;min-width:0}
+h1{margin:14px 0 8px;font-size:28px}
+#live .lyrics{padding:0 24px;gap:12px}.lact{padding:8px 20px 10px}.lact button{padding:10px 0}.lhead{padding-top:8px}
+.sheet{left:0;right:0;margin:0 auto;width:min(560px,100%);max-height:92%;overflow:auto}
+#app.cam .tabbar{display:none!important}
+#live.cam>#cc{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:0;bottom:0;width:86px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0;background:none}
+#live.cam .cmode{gap:12px;margin:0;flex-direction:column}#live.cam .crow{flex-direction:column;gap:16px}#live.cam .lyrics{padding-right:112px}#aa{margin-right:112px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== Opal-inspired visual refresh / 现场同频 ===== */
+:root{
+  --bg:#050606;
+  --card:rgba(22,24,24,.76);
+  --tx:#f7fff8;
+  --tx2:rgba(225,238,229,.58);
+  --sep:rgba(255,255,255,.08);
+  --blue:#c9ffb1;
+  --live-mint:#c9ffb1;
+  --live-cyan:#73e9df;
+  --live-lime:#b9ff7d;
+  --live-gold:#ffd78a;
+  --bar:rgba(15,17,17,.72);
+}
+:root[data-theme="dark"]{
+  --bg:#050606;--card:rgba(22,24,24,.76);--tx:#f7fff8;--tx2:rgba(225,238,229,.58);--sep:rgba(255,255,255,.08);--blue:#c9ffb1;--bar:rgba(15,17,17,.72)
+}
+html,body{background:#111;color:var(--tx)}
+#app{background:#050606;box-shadow:none}
+@media (min-width:500px) and (min-height:560px){#app{border-radius:44px;box-shadow:0 0 0 10px #0a0b0b,0 20px 70px rgba(0,0,0,.48)}}
+.page:not(#live){background:
+  radial-gradient(circle at 12% 0%,rgba(182,255,156,.09),transparent 26%),
+  radial-gradient(circle at 92% 18%,rgba(87,226,217,.08),transparent 22%),#050606;
+}
+#p-list,#p-set{padding-left:18px;padding-right:18px}
+h1{font-size:31px;letter-spacing:-.8px;color:#f6fff7}
+.navrow{padding-top:7px}
+.addb{color:var(--live-mint)}
+.group{background:rgba(20,22,22,.82);border:1px solid rgba(255,255,255,.055);box-shadow:0 14px 40px rgba(0,0,0,.18)}
+.row{min-height:56px;padding:13px 16px;background:transparent}
+.row .t b{font-weight:560;color:#f5fff7}.row .t span{color:rgba(225,238,229,.52)}
+.lbl{color:rgba(219,235,224,.44);text-transform:uppercase;letter-spacing:1.4px;font-size:11px}
+.note{color:rgba(225,238,229,.48)}
+.btn{background:linear-gradient(135deg,#cfffbd,#7be9db);color:#07110b;box-shadow:0 10px 30px rgba(140,255,200,.18)}
+.btn.g{background:rgba(26,29,29,.9);color:#c9ffb1;border:1px solid rgba(201,255,177,.13)}
+.tabbar{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:calc(100% - 34px);max-width:360px;border:1px solid rgba(255,255,255,.08);border-radius:22px;background:rgba(24,27,27,.78);box-shadow:0 14px 40px rgba(0,0,0,.4);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);padding:5px 6px 7px;z-index:4}
+.tab{color:rgba(229,241,232,.42);font-weight:520}
+.tab svg{width:23px;height:23px}.tab.on{color:#d2ffbe}
+/* Live scene */
+#live{position:relative;isolation:isolate;overflow:hidden;padding:0;background:
+  radial-gradient(circle at 50% 26%,rgba(183,255,162,.07),transparent 23%),
+  radial-gradient(circle at 50% 55%,rgba(102,235,222,.055),transparent 28%),
+  radial-gradient(circle at 50% 88%,rgba(55,77,61,.15),transparent 31%),#040505;}
+#live:before{content:"";position:absolute;inset:-16%;z-index:0;pointer-events:none;background:
+  radial-gradient(circle at 49% 44%,rgba(206,255,180,.12) 0 5%,rgba(112,235,217,.06) 12%,transparent 27%),
+  radial-gradient(circle at 54% 63%,rgba(115,233,223,.07),transparent 23%);filter:blur(22px);opacity:.9;}
+#live:after{content:"";position:absolute;width:58%;aspect-ratio:1;left:21%;top:30%;border-radius:50%;z-index:0;pointer-events:none;border:1px solid rgba(201,255,177,.08);box-shadow:0 0 80px rgba(139,248,209,.06),inset 0 0 60px rgba(139,248,209,.04)}
+#live>*{position:relative;z-index:1}
+.lhead{padding:20px 18px 0;align-items:center;gap:12px}
+.live-brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.live-brand strong{font-size:25px;line-height:1.05;letter-spacing:-.7px;font-weight:700;color:#f5fff7}
+.live-brand span{font-size:8px;letter-spacing:2.1px;color:rgba(216,238,220,.37);font-weight:700}
+.live-head-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.status{padding:7px 10px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.065);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-size:12px;white-space:nowrap;color:rgba(244,255,247,.82)}
+.dot{width:7px;height:7px;box-shadow:0 0 10px currentColor}
+.dot.listening{background:var(--live-gold);color:var(--live-gold)}.dot.locked{background:var(--live-mint);color:var(--live-mint)}.dot.lost{background:#ff6b6b;color:#ff6b6b}
+.camb{border-color:rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#edfff0;width:37px;height:37px;box-shadow:0 7px 24px rgba(0,0,0,.24)}
+.camb.on{background:rgba(201,255,177,.14);color:#d6ffc7;border-color:rgba(201,255,177,.22)}
+.meter{opacity:.55}.meter i{background:rgba(201,255,177,.18);width:3px}.meter i{box-shadow:0 0 7px rgba(201,255,177,.18)}
+.song{padding:19px 22px 0;color:rgba(227,241,231,.46);font-size:12px;text-align:center;letter-spacing:.7px;text-transform:uppercase}
+.lyrics{position:relative;min-height:0;gap:15px;padding:0 28px;justify-content:center;text-align:center;overflow:visible}
+.lyrics:before{content:"";position:absolute;left:50%;top:50%;width:min(340px,82vw);height:min(340px,82vw);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(193,255,184,.18) 0,rgba(103,232,216,.10) 18%,rgba(97,235,215,.02) 47%,transparent 68%);filter:blur(13px);z-index:-1;animation:syncBreathe 4s ease-in-out infinite}
+.lyrics:after{content:"";position:absolute;left:50%;top:50%;width:min(275px,66vw);height:min(275px,66vw);transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(from 210deg,transparent 0 38%,rgba(204,255,187,.40) 55%,rgba(104,234,219,.26) 77%,transparent 92%);-webkit-mask:radial-gradient(circle,transparent 66%,#000 67% 68%,transparent 69%);mask:radial-gradient(circle,transparent 66%,#000 67% 68%,transparent 69%);opacity:.9;animation:spinGlow 16s linear infinite}
+@keyframes syncBreathe{0%,100%{transform:translate(-50%,-50%) scale(.93);opacity:.78}50%{transform:translate(-50%,-50%) scale(1.06);opacity:1}}
+@keyframes spinGlow{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.ln{font-size:20px;font-weight:560;color:rgba(227,236,230,.20);line-height:1.4;letter-spacing:-.2px;text-shadow:none}
+.ln.cur{font-size:36px;font-weight:760;color:#f7fff7;text-shadow:0 0 24px rgba(197,255,186,.18),0 8px 28px rgba(0,0,0,.55);letter-spacing:-1.05px}
+.ln.nx{font-size:24px;font-weight:600;color:rgba(220,235,222,.42)}
+.ln.pv{color:rgba(217,231,219,.15)}
+.prog{height:2px;margin:0 28px;background:rgba(255,255,255,.07);box-shadow:0 0 14px rgba(201,255,177,.07)}
+.prog i{background:linear-gradient(90deg,#d1ffbb,#86e9dd);box-shadow:0 0 12px rgba(181,255,198,.55)}
+.lact{gap:8px;padding:13px 20px max(22px,env(safe-area-inset-bottom,0px));}
+.lact button{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:15px 12px;background:rgba(28,31,31,.76);color:rgba(232,244,235,.78);box-shadow:0 14px 34px rgba(0,0,0,.24);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.lact button.main{background:linear-gradient(135deg,rgba(215,255,200,.95),rgba(110,226,210,.95));color:#06100a;box-shadow:0 12px 32px rgba(138,247,203,.18)}
+.lact .main-dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.act-ico{font-size:17px;line-height:1}
+/* lyric overlay panel */
+#aa{margin:8px 18px 0;border:1px solid rgba(255,255,255,.07);background:rgba(20,23,23,.80);box-shadow:0 14px 40px rgba(0,0,0,.34)}
+.seg{background:rgba(255,255,255,.08)}
+.seg button{color:rgba(237,248,239,.65)}.seg button.on{background:rgba(201,255,177,.18);color:#d9ffca}
+.sw.on{background:#baff9d}
+/* camera mode */
+#live.cam:before{background:radial-gradient(circle at 50% 30%,rgba(205,255,182,.09),transparent 25%),radial-gradient(circle at 45% 80%,rgba(101,233,220,.07),transparent 30%);}
+#live.cam:after{width:74%;top:26%;opacity:.55}
+#live.cam .song{padding-top:8px}
+#live.cam .lyrics{padding-left:26px;padding-right:26px}
+#live.cam .ln.cur{text-shadow:0 2px 24px rgba(0,0,0,.85),0 0 18px rgba(198,255,188,.10)}
+#cc{padding:0 18px max(20px,env(safe-area-inset-bottom,0px));background:linear-gradient(transparent 0%,rgba(3,4,4,.58) 35%,rgba(3,4,4,.92) 100%);}
+.cmode{display:flex;justify-content:center;gap:5px;margin:0 auto 16px;width:max-content;padding:4px;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:rgba(20,22,22,.70);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.cmode button{padding:7px 15px;border-radius:999px;color:rgba(239,247,240,.48);font-size:13px}.cmode button.on{background:rgba(201,255,177,.15);color:#e0ffd3}
+.crow{padding:0 14px;align-items:center}
+.cb{width:48px;height:48px;border-radius:50%;background:rgba(25,28,28,.76);border:1px solid rgba(255,255,255,.09);box-shadow:0 10px 28px rgba(0,0,0,.28);color:#ecfff0}
+.shut{width:78px;height:78px;border:4px solid rgba(236,255,240,.94);box-shadow:0 0 0 8px rgba(198,255,186,.05),0 10px 34px rgba(0,0,0,.32)}
+.shut:after{inset:5px;background:linear-gradient(135deg,#f5fff1,#cbffb4)}.shut.v:after{background:#ff665e}.shut.rec:after{background:#ff5d5d;box-shadow:0 0 18px rgba(255,93,93,.32)}
+#rtm{padding:6px 10px;border:1px solid rgba(255,93,93,.14);border-radius:999px;background:rgba(62,18,18,.35);color:#ff9e97}
+.recd{box-shadow:0 0 10px rgba(255,79,79,.45)}
+/* Settings: compact dark-glass sections */
+.sethead{background:rgba(20,22,22,.82);border:1px solid rgba(255,255,255,.05);box-shadow:0 10px 28px rgba(0,0,0,.15)}
+.sethead b{color:#f6fff7}.setbody>.group{border-radius:14px}
+.seg2{background:rgba(255,255,255,.07)}.seg2 button{color:rgba(234,245,237,.65)}.seg2 button.on{background:rgba(255,255,255,.10);color:#d0ffbe;box-shadow:0 2px 8px rgba(0,0,0,.22)}
+#app.cam .tabbar{display:none}
+@media (orientation:landscape) and (max-height:559px){
+  .tabbar{display:none}
+  #live .lyrics{padding:0 92px 0 24px;gap:10px}.ln.cur{font-size:31px}
+  .lhead{padding-top:10px}.lact{padding-bottom:10px}
+}
+@media (max-width:499px){
+  .tabbar{width:calc(100% - 26px);bottom:9px}
+  .lhead{padding-top:18px}.live-brand strong{font-size:22px}
+  .ln.cur{font-size:31px}.ln.nx{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){.lyrics:before,.lyrics:after{animation:none!important}}
+
+/* ===== v1.9 UI fixes =====
+   1) 主操作区为底部导航预留独立安全空间
+   2) 顶部仅保留 LIVE SYNC，状态信息置于其正下方并左对齐
+   3) 相机模式彻底移除现场页装饰背景，保证纯净取景
+   4) 浅色主题同步覆盖悬浮操作、相机控件和状态元素
+*/
+#live{padding-bottom:calc(132px + env(safe-area-inset-bottom,0px));}
+#live.cam{padding-bottom:0!important;background:#000!important;background-image:none!important;}
+#live.cam:before,#live.cam:after{display:none!important;content:none!important;}
+#live.cam .live-brand{display:none!important;}
+#live.cam #cv{background:#000;z-index:0;}
+#live.cam #cc{z-index:2;}
+#live.cam #flash{z-index:3;}
+.lhead{align-items:flex-start;}
+.live-brand{align-items:flex-start;flex:1;min-width:0;gap:0;}
+.live-brand>span{display:block;font-size:12px;letter-spacing:3px;line-height:1;color:rgba(216,238,220,.72);font-weight:800;margin:3px 0 7px;text-align:left;}
+.live-brand .status{align-self:flex-start;margin:0;padding:6px 9px;max-width:min(70vw,280px);white-space:normal;justify-content:flex-start;text-align:left;line-height:1.3;font-size:12px;}
+.live-head-right{flex:none;min-height:37px;align-items:center;}
+.live-head-right .meter{margin-right:1px;}
+.camb{position:relative;display:flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;flex:none;width:38px;height:38px;z-index:4;}
+.camb svg{display:block;width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;}
+#camBtn{display:flex!important;visibility:visible!important;opacity:1!important;}
+#camBtn svg{pointer-events:none;}
+
+/* 浅色界面：现场顶部与主操作区采用同一套明亮玻璃语言 */
+:root[data-theme="light"] #live{background:linear-gradient(180deg,#f4f7f4 0%,#edf3ef 100%);}
+:root[data-theme="light"] .lhead{color:#213127;}
+:root[data-theme="light"] .live-brand>span{color:rgba(31,64,42,.72);}
+:root[data-theme="light"] .live-brand .status{background:rgba(255,255,255,.76);border-color:rgba(39,66,49,.11);color:rgba(34,58,43,.78);box-shadow:0 4px 18px rgba(31,53,40,.06);}
+:root[data-theme="light"] #live .song{color:rgba(36,53,42,.52);}
+:root[data-theme="light"] #live .ln{color:rgba(42,57,47,.22);text-shadow:none;}
+:root[data-theme="light"] #live .ln.cur{color:#183022;text-shadow:0 8px 26px rgba(57,102,75,.10);}
+:root[data-theme="light"] #live .ln.nx{color:rgba(42,57,47,.48);}
+:root[data-theme="light"] #live .ln.pv{color:rgba(42,57,47,.16);}
+:root[data-theme="light"] #live .prog{background:rgba(38,63,48,.10);}
+:root[data-theme="light"] .lact button{background:rgba(255,255,255,.72);border-color:rgba(45,125,93,.10);color:#2d7d5d;box-shadow:0 12px 30px rgba(44,77,57,.08);}
+:root[data-theme="light"] .lact button.main{background:linear-gradient(135deg,#d7f2d7,#c6ebe2);color:#173322;box-shadow:0 10px 28px rgba(64,132,92,.12);}
+:root[data-theme="light"] #live.cam{background:#fff!important;background-image:none!important;}
+
+@media (max-width:499px){
+  #live{padding-bottom:calc(138px + env(safe-area-inset-bottom,0px));}
+  #live.cam{padding-bottom:0!important;}
+  .lhead{padding-top:16px;padding-left:17px;padding-right:17px;}
+  .live-brand>span{font-size:11px;letter-spacing:2.8px;margin-bottom:7px;}
+  .live-brand .status{font-size:11px;padding:6px 8px;max-width:calc(100vw - 130px);}
+  .live-head-right{gap:6px;}
+  .live-head-right .meter{display:none;}
+  #camBtn{width:38px;height:38px;}
+}
+
+/* ===== v1.8 fixes / light theme ===== */
+/* 现场页：底部浮层导航不再遮挡主操作；拍摄页关闭装饰环。 */
+.lhead{align-items:flex-start;}
+.live-brand{align-items:flex-start;flex:1;min-width:0;}
+.live-brand>span{display:block;font-size:12px;letter-spacing:3px;line-height:1;color:rgba(216,238,220,.72);font-weight:800;margin:3px 0 7px;}
+.live-brand .status{align-self:flex-start;margin:0;padding:6px 9px;max-width:100%;white-space:normal;justify-content:flex-start;text-align:left;line-height:1.25;font-size:12px;}
+.live-head-right{flex:none;min-height:37px;align-items:center;}
+.live-head-right .meter{margin-right:1px;}
+.camb svg{display:block;width:22px;height:22px;stroke:currentColor;fill:none;}
+#camBtn{display:flex!important;visibility:visible!important;opacity:1!important;}
+
+/* 浅色界面：与 Opal 的明亮玻璃感保持同一套层级。现场背景仍由「现场背景」单独控制。 */
+:root[data-theme="light"]{
+  --bg:#f4f6f4;--card:rgba(255,255,255,.82);--tx:#18201a;--tx2:rgba(31,43,34,.54);--sep:rgba(37,53,42,.10);--blue:#2d7d5d;--bar:rgba(247,249,247,.82);
+  --live-mint:#2d8a66;--live-cyan:#3caaa0;--live-lime:#6ea95d;--live-gold:#b17c23;
+}
+:root[data-theme="light"] html,
+:root[data-theme="light"] body{background:#dfe6e1;color:var(--tx);}
+:root[data-theme="light"] #app{background:#f4f6f4;box-shadow:none;}
+:root[data-theme="light"] .page:not(#live){background:
+  radial-gradient(circle at 12% 0%,rgba(111,181,130,.11),transparent 28%),
+  radial-gradient(circle at 92% 18%,rgba(104,186,181,.10),transparent 24%),#f4f6f4;
+}
+:root[data-theme="light"] h1{color:#172019;}
+:root[data-theme="light"] .addb{color:#2d7d5d;}
+:root[data-theme="light"] .group{background:rgba(255,255,255,.86);border-color:rgba(29,49,37,.08);box-shadow:0 12px 32px rgba(36,58,45,.07);}
+:root[data-theme="light"] .row .t b{color:#1b251e;}
+:root[data-theme="light"] .row .t span{color:rgba(36,53,42,.54);}
+:root[data-theme="light"] .lbl{color:rgba(43,65,52,.48);}
+:root[data-theme="light"] .note{color:rgba(39,57,46,.58);}
+:root[data-theme="light"] .btn{background:linear-gradient(135deg,#cdeecf,#bfe8dd);color:#163020;box-shadow:0 10px 28px rgba(64,132,92,.12);}
+:root[data-theme="light"] .btn.g{background:rgba(255,255,255,.82);color:#2d7d5d;border-color:rgba(45,125,93,.12);}
+:root[data-theme="light"] .tabbar{background:rgba(250,252,250,.82);border-color:rgba(29,49,37,.10);box-shadow:0 14px 40px rgba(39,57,46,.14);}
+:root[data-theme="light"] .tab{color:rgba(37,55,44,.42);}
+:root[data-theme="light"] .tab.on{color:#2d7d5d;}
+:root[data-theme="light"] .sethead{background:rgba(255,255,255,.88);border-color:rgba(29,49,37,.08);box-shadow:0 8px 24px rgba(36,58,45,.07);}
+:root[data-theme="light"] .sethead b{color:#1b251e;}
+:root[data-theme="light"] .seg2{background:rgba(34,58,44,.07);}
+:root[data-theme="light"] .seg2 button{color:rgba(30,47,37,.62);}
+:root[data-theme="light"] .seg2 button.on{background:#fff;color:#2d7d5d;box-shadow:0 2px 8px rgba(37,58,45,.10);}
+:root[data-theme="light"] .sheet{background:#f4f6f4;color:#18201a;}
+:root[data-theme="light"] .sheet input[type=text]{background:#fff;color:#18201a;box-shadow:inset 0 0 0 1px rgba(29,49,37,.07);}
+:root[data-theme="light"] .act{background:#fff;color:#2d7d5d;box-shadow:0 6px 18px rgba(37,58,45,.06);}
+:root[data-theme="light"] .act.red{color:#c63e43;}
+:root[data-theme="light"] .chip{background:#edf3ee;color:#2d7d5d;}
+:root[data-theme="light"] .live-brand>span{color:rgba(31,64,42,.72);}
+:root[data-theme="light"] .live-brand .status{background:rgba(255,255,255,.72);border-color:rgba(39,66,49,.10);color:rgba(34,58,43,.72);box-shadow:0 4px 18px rgba(31,53,40,.05);}
+:root[data-theme="light"] .camb{background:rgba(255,255,255,.78);border-color:rgba(39,66,49,.11);color:#254933;box-shadow:0 7px 22px rgba(31,53,40,.10);}
+:root[data-theme="light"] .camb.on{background:rgba(114,184,126,.14);color:#2d7d5d;border-color:rgba(45,125,93,.18);}
+:root[data-theme="light"] .meter i{background:rgba(45,125,93,.18);box-shadow:0 0 7px rgba(45,125,93,.10);}
+
+
+/* ===== v2.0 Opal-like visual layer ===== */
+:root{
+  --ui-bg:#050706;--ui-card:rgba(25,29,28,.72);--ui-card-solid:#171b1a;--ui-text:#f7fbf8;--ui-sub:#9ba7a0;--ui-line:rgba(255,255,255,.10);
+  --ui-glass:rgba(20,24,23,.72);--ui-accent:#d8ffd8;--ui-accent-2:#b5ffce;--ui-shadow:0 16px 44px rgba(0,0,0,.34);
+}
+:root[data-theme="light"]{
+  --ui-bg:#f4f7f4;--ui-card:rgba(255,255,255,.82);--ui-card-solid:#fff;--ui-text:#111513;--ui-sub:#68736c;--ui-line:rgba(25,35,30,.10);
+  --ui-glass:rgba(250,252,250,.80);--ui-accent:#173d25;--ui-accent-2:#1f6840;--ui-shadow:0 14px 36px rgba(36,56,42,.12);
+}
+html,body{background:var(--ui-bg)}
+#app{background:var(--ui-bg)}
+.page:not(#live){padding-bottom:110px}
+.group{background:var(--ui-card)!important;border:1px solid var(--ui-line);box-shadow:var(--ui-shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.row+.row:before{border-top-color:var(--ui-line)!important}.note,.lbl{color:var(--ui-sub)!important}
+.btn{border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 28px rgba(0,0,0,.16)}
+:root[data-theme="light"] .btn{box-shadow:0 10px 24px rgba(46,86,58,.12)}
+
+/* Live: English brand + left aligned state */
+#live{padding:0 0 132px!important;background:#050706!important;position:relative;overflow:hidden}
+#live:not(.cam){background:radial-gradient(circle at 50% 40%,rgba(179,255,205,.075),transparent 26%),radial-gradient(circle at 18% 80%,rgba(96,168,120,.045),transparent 22%),#050706!important}
+#live .lhead{position:relative;z-index:8;display:flex;align-items:flex-start;justify-content:space-between;min-height:84px;padding:18px 18px 0}
+.live-brand{display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0;gap:7px}
+.live-brand>span{display:block;color:rgba(255,255,255,.96);font-size:15px;font-weight:800;letter-spacing:.16em;line-height:1;text-shadow:0 0 22px rgba(185,255,215,.12)}
+.live-brand .status{align-self:flex-start;display:flex;align-items:center;gap:7px;min-height:18px;max-width:calc(100% - 160px);color:rgba(231,238,234,.72);font-size:12px;line-height:1.35;text-align:left;opacity:1}
+.live-brand .status .dot{width:6px;height:6px;flex:0 0 6px}
+.live-head-right{position:relative;z-index:9;display:flex;align-items:center;gap:8px!important;flex:none}
+#live #meter{display:none!important}
+#live .camb{position:relative;z-index:10;width:38px;height:38px;min-width:38px;border-radius:50%;border:1px solid rgba(255,255,255,.14)!important;background:rgba(30,35,34,.72)!important;color:#f5faf7!important;box-shadow:0 8px 20px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center}
+#live .camb svg{display:block!important;width:19px!important;height:19px!important;opacity:1!important;visibility:visible!important;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#live #camBtn{display:flex!important;visibility:visible!important;opacity:1!important}
+#live .mrecb{opacity:.72}.mrecb{position:relative;overflow:hidden}.mrecb .mrec-pulse{position:absolute;inset:7px;border:1.5px solid currentColor;border-radius:50%;opacity:0}.mrecb.active .mrec-pulse{animation:mrecPulse 1.25s ease-out infinite}.mrecb.active .mrec-wave{animation:mrecWave .85s ease-in-out infinite alternate}
+@keyframes mrecPulse{0%{transform:scale(.55);opacity:.8}100%{transform:scale(1.45);opacity:0}}@keyframes mrecWave{from{transform:scaleY(.65)}to{transform:scaleY(1.15)}}
+
+/* Lyrics / progress */
+#live .song{position:relative;z-index:2;padding:4px 20px 0;color:rgba(220,231,224,.44);font-size:12px;letter-spacing:.02em}
+#live .lyrics{position:relative;z-index:2;padding:0 24px;gap:18px}
+#live .ln{text-shadow:none;font-weight:600;letter-spacing:.01em}.ln.cur{position:relative;color:#f7fff9!important;text-shadow:0 0 28px rgba(191,255,212,.14)}
+#live .ln.nx{color:rgba(221,231,225,.45)!important}#live .ln.pv{color:rgba(221,231,225,.16)!important}
+#live .prog{position:relative;z-index:2;height:2px;margin:0 24px 8px;background:rgba(255,255,255,.08)}#live .prog i{background:linear-gradient(90deg,#9cffb7,#f2fff5)!important;box-shadow:0 0 12px rgba(181,255,206,.34)}
+
+/* Main actions keep clear separation from floating nav */
+#live .lact{position:relative;z-index:12;display:flex;gap:10px;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));margin:0 0 58px}
+#live .lact button{min-height:50px;border-radius:17px;border:1px solid rgba(255,255,255,.10);background:rgba(24,29,27,.76)!important;color:#e6f7eb!important;box-shadow:0 10px 24px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+#live .lact button.main{background:linear-gradient(135deg,#deffe8,#bafed0)!important;color:#102117!important;border-color:rgba(220,255,231,.58)!important;box-shadow:0 10px 28px rgba(147,255,180,.16),inset 0 1px 0 rgba(255,255,255,.9)}
+#live .act-ico,#live .main-dot{display:none!important}
+
+/* Floating bottom nav, never in normal flow */
+.tabbar{position:absolute!important;left:50%!important;right:auto!important;bottom:max(10px,env(safe-area-inset-bottom,0px))!important;transform:translateX(-50%)!important;width:calc(100% - 34px)!important;max-width:360px!important;min-height:62px;z-index:20!important;padding:5px 6px 7px!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:22px!important;background:rgba(24,29,27,.78)!important;box-shadow:0 16px 42px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(24px)!important;-webkit-backdrop-filter:blur(24px)!important}
+.tabbar .tab{padding:5px 0 3px!important;border-radius:16px;font-size:10px;color:rgba(235,243,238,.50)!important}.tabbar .tab svg{width:22px!important;height:22px!important;margin-bottom:2px!important}.tabbar .tab.on{color:#e8ffee!important;background:rgba(210,255,225,.09)!important}
+
+/* Camera mode: pure black video canvas; no leftover stage decoration */
+#live.cam,#live.cam::before,#live.cam::after{background:#000!important;background-image:none!important;box-shadow:none!important}
+#live.cam>*::before,#live.cam>*::after{content:none!important;display:none!important}
+#live.cam #cv{z-index:0!important;background:#000!important}
+#live.cam #cc{position:absolute;left:0;right:0;bottom:0;z-index:12!important;padding:14px 18px calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(0,0,0,.78) 48%,rgba(0,0,0,.94))}
+#live.cam .cmode button{color:rgba(255,255,255,.68);padding:7px 12px;border-radius:999px}.cmode button.on{color:#fff;background:rgba(255,255,255,.10)!important}
+#live.cam .shut{width:78px;height:78px;box-shadow:0 6px 22px rgba(0,0,0,.28)}
+#live.cam .cb{background:rgba(24,27,26,.70)!important;border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+#live.cam .lhead{min-height:68px}#live.cam .live-brand{display:none}
+
+/* Music recognition sheet */
+#mrec{position:absolute;inset:0;z-index:25;background:rgba(0,0,0,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;align-items:flex-end;justify-content:center}#mrec.on{display:flex}
+.mrec-sheet{width:100%;max-width:430px;background:rgba(28,28,30,.96);color:#fff;border-radius:20px 20px 0 0;padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.28);text-align:center}.mrec-grab{width:36px;height:5px;border-radius:3px;background:#636366;margin:0 auto 18px}.mrec-state{font-size:13px;color:#8e8e93;min-height:20px;margin-bottom:8px}.mrec-icon{width:74px;height:74px;margin:8px auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#2c2c2e;color:#bafed0}.mrec-icon svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.mrec-title{font-size:27px;font-weight:700}.mrec-artist{margin-top:5px;font-size:15px;color:#8e8e93}.mrec-score{margin:14px auto 16px;display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:#2c2c2e;color:#ebebf5;font-size:13px}.mrec-dot{width:7px;height:7px;border-radius:50%;background:#34c759}.mrec-actions{display:flex;gap:10px;margin-top:8px}.mrec-actions button{flex:1;border:0;border-radius:14px;padding:14px 0;font-size:16px;font-weight:600;background:#2c2c2e;color:#bafed0}.mrec-actions button.main{background:linear-gradient(135deg,#deffe8,#bafed0);color:#102117}.mrec-demo{margin:10px 0 0;font-size:12px;color:#636366;line-height:1.45}.mrec-loading{font-size:14px;color:#ebebf5}.mrec-loading i{display:inline-block;width:5px;height:5px;margin:0 2px;border-radius:50%;background:#bafed0;animation:mrecDot .9s infinite}.mrec-loading i:nth-child(2){animation-delay:.15s}.mrec-loading i:nth-child(3){animation-delay:.3s}@keyframes mrecDot{0%,70%,100%{transform:translateY(0);opacity:.35}35%{transform:translateY(-4px);opacity:1}}
+
+/* Gallery refresh */
+.gi{align-items:flex-start!important}.gi .th{width:84px;height:84px;border-radius:12px;overflow:hidden;background:#000;flex:none}.gi .th img,.gi .th video{width:100%;height:100%;object-fit:cover}.gi .t{padding-top:2px}.gi .t b{font-size:16px}.gi .t span{display:block;line-height:1.45;margin-top:3px}.gi-actions{display:flex;gap:6px;flex:none;margin-left:auto}.gi-actions button{min-width:44px;height:34px;padding:0 10px;border:0;border-radius:10px;background:var(--bg);color:var(--blue);font-size:14px}.gi-actions button.red{color:var(--red)}
+.pv-actions{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;gap:8px}.pv-actions .act{position:static!important;flex:1;margin-top:0}
+.gallery-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px}.gallery-head .count{font-size:13px;color:var(--tx2)}.gallery-head button{border:0;background:none;color:var(--blue);font-size:15px;padding:6px 2px}.gallery-tools{display:flex;gap:8px}.gallery-tools button{background:var(--card);border:0;border-radius:12px;padding:10px 12px;color:var(--blue);font-size:14px}.gallery-tools button.red{color:var(--red)}
+
+/* Light UI */
+:root[data-theme="light"] body{background:#e6ebe7}.page:not(#live){background:radial-gradient(circle at 12% 0%,rgba(111,181,130,.11),transparent 28%),radial-gradient(circle at 92% 18%,rgba(104,186,181,.10),transparent 24%),#f4f6f4}
+:root[data-theme="light"] h1{color:#141a16}:root[data-theme="light"] .row .t b{color:#161c18}:root[data-theme="light"] .pill{color:#6d776f}:root[data-theme="light"] .more{background:#edf2ee;color:#1b6a3a}
+:root[data-theme="light"] .sheet{background:rgba(247,249,247,.94);color:#141a16;border-top:1px solid rgba(32,49,38,.08);box-shadow:0 -18px 44px rgba(37,56,43,.12);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+:root[data-theme="light"] .grab{background:rgba(30,43,34,.16)}:root[data-theme="light"] .sheet input[type=text]{background:#fff;color:#111713;border:1px solid rgba(26,44,32,.06)}:root[data-theme="light"] .act{background:#fff;color:#1b6a3a;border:1px solid rgba(34,56,41,.06);box-shadow:0 8px 22px rgba(35,54,41,.07)}:root[data-theme="light"] .act.red{color:#d73a32}
+:root[data-theme="light"] .chk,:root[data-theme="light"] .addb,:root[data-theme="light"] .imp{color:#1b6a3a}
+:root[data-theme="light"] .tabbar{background:rgba(255,255,255,.84)!important;border-color:rgba(36,51,41,.08)!important;box-shadow:0 16px 36px rgba(36,53,42,.12),inset 0 1px 0 rgba(255,255,255,.95)}
+:root[data-theme="light"] .tabbar .tab{color:rgba(32,46,37,.46)!important}:root[data-theme="light"] .tabbar .tab.on{color:#173c25!important;background:rgba(44,117,69,.08)!important}
+:root[data-theme="light"] #live .lhead .live-brand>span{color:#111713;text-shadow:none}:root[data-theme="light"] #live .live-brand .status{color:rgba(28,39,32,.64)}:root[data-theme="light"] #live .camb{background:rgba(255,255,255,.78)!important;color:#162018!important;border-color:rgba(28,40,32,.10)!important;box-shadow:0 8px 20px rgba(35,55,40,.10),inset 0 1px 0 rgba(255,255,255,.88)}
+:root[data-theme="light"] #live .lact button{background:rgba(255,255,255,.88)!important;color:#173b25!important;border-color:rgba(38,67,47,.08);box-shadow:0 10px 24px rgba(35,55,40,.10)}
+:root[data-theme="light"] #live .lact button.main{background:#183d27!important;color:#fff!important;border-color:#183d27!important;box-shadow:0 10px 24px rgba(24,61,39,.18)}
+:root[data-theme="light"] #live .song{color:rgba(36,53,42,.48)}
+:root[data-theme="light"] #live .ln.cur{color:#142017!important;text-shadow:0 0 18px rgba(61,130,84,.10)}:root[data-theme="light"] #live .ln.nx{color:rgba(35,53,41,.54)!important}:root[data-theme="light"] #live .ln.pv{color:rgba(35,53,41,.18)!important}
+:root[data-theme="light"] #live .prog{background:rgba(30,50,38,.10)}:root[data-theme="light"] #live .prog i{background:linear-gradient(90deg,#2e835e,#78c98b)!important;box-shadow:none}
+:root[data-theme="light"] #mrec .mrec-sheet{background:rgba(250,252,250,.97);color:#152018}:root[data-theme="light"] #mrec .mrec-state,:root[data-theme="light"] #mrec .mrec-artist{color:#6c756e}:root[data-theme="light"] #mrec .mrec-icon{background:#e8f1ea;color:#2c7d56}:root[data-theme="light"] #mrec .mrec-score{background:#edf2ee;color:#213027}:root[data-theme="light"] #mrec .mrec-actions button{background:#edf2ee;color:#2c7d56}:root[data-theme="light"] #mrec .mrec-actions button.main{background:#183d27;color:#fff}
+
+@media (max-width:430px){#live .lhead{padding-left:17px;padding-right:14px}.live-brand .status{max-width:calc(100vw - 170px)}#live .lact{padding-left:16px;padding-right:16px}.tabbar{width:calc(100% - 26px)!important}}
+@media (orientation:landscape) and (max-height:559px){#live{padding-bottom:96px!important}#live .lact{margin-bottom:18px;padding-top:8px}.tabbar{bottom:8px!important;min-height:56px}.live-brand>span{font-size:13px}}
+
+
+/* ===== v2.1 Opal UI refinement: color + floating navigation only ===== */
+:root{
+  --bg:#060807;
+  --card:rgba(19,22,21,.84);
+  --tx:#f4fbf5;
+  --tx2:rgba(222,235,226,.56);
+  --sep:rgba(255,255,255,.075);
+  --blue:#c9ffb1;
+  --green:#b9ff9a;
+  --red:#ff6f73;
+  --orange:#ffd27d;
+  --bar:rgba(18,22,20,.78);
+  --opal-mint:#c9ffb1;
+  --opal-aqua:#79e7dc;
+  --opal-lime:#b8ff83;
+  --opal-soft:#e8ffe1;
+}
+:root[data-theme="dark"]{
+  --bg:#060807;
+  --card:rgba(19,22,21,.84);
+  --tx:#f4fbf5;
+  --tx2:rgba(222,235,226,.56);
+  --sep:rgba(255,255,255,.075);
+  --blue:#c9ffb1;
+  --green:#b9ff9a;
+  --bar:rgba(18,22,20,.78);
+}
+html,body{
+  background:#0d100e;
+}
+#app{
+  background:var(--bg);
+}
+.page:not(#live){
+  background:
+    radial-gradient(circle at 10% 0%,rgba(201,255,177,.055),transparent 24%),
+    radial-gradient(circle at 90% 18%,rgba(121,231,220,.045),transparent 20%),
+    var(--bg);
+}
+.group{
+  background:rgba(18,22,20,.78);
+  border:1px solid rgba(255,255,255,.055);
+  box-shadow:0 10px 28px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.018);
+}
+.row{
+  background:transparent;
+}
+.row+.row:before{border-top-color:rgba(255,255,255,.055)}
+.row .t b{color:#f2fbf4}
+.row .t span,.note{color:rgba(221,235,226,.52)}
+.lbl{
+  color:rgba(210,228,216,.42);
+  letter-spacing:1.1px;
+}
+.chk,.addb,.imp{color:var(--opal-mint)}
+.btn{
+  background:linear-gradient(135deg,var(--opal-soft),var(--opal-aqua));
+  color:#0b130d;
+  box-shadow:0 10px 28px rgba(125,235,190,.16),inset 0 1px 0 rgba(255,255,255,.75);
+}
+.btn.g{
+  background:rgba(24,29,27,.82);
+  color:var(--opal-mint);
+  border:1px solid rgba(201,255,177,.12);
+}
+/* Opal-like floating navigation: keep the same three tabs and labels */
+.tabbar{
+  position:absolute!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:max(9px,env(safe-area-inset-bottom,0px))!important;
+  transform:translateX(-50%)!important;
+  width:calc(100% - 28px)!important;
+  max-width:360px!important;
+  min-height:62px;
+  display:flex;
+  align-items:stretch;
+  gap:4px;
+  padding:5px 6px 7px!important;
+  border:1px solid rgba(255,255,255,.085)!important;
+  border-radius:22px!important;
+  background:rgba(19,23,21,.78)!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter:blur(24px) saturate(130%);
+  -webkit-backdrop-filter:blur(24px) saturate(130%);
+  z-index:30!important;
+}
+.tabbar .tab{
+  flex:1;
+  border:0!important;
+  border-radius:16px;
+  color:rgba(232,241,235,.46)!important;
+  background:transparent!important;
+  font-size:10px;
+  font-weight:550;
+  padding:5px 0 4px!important;
+  transition:background .2s ease,color .2s ease,transform .2s ease;
+}
+.tabbar .tab svg{
+  width:23px!important;
+  height:23px!important;
+  margin:0 auto 2px!important;
+  stroke-width:1.7;
+}
+.tabbar .tab.on{
+  color:#e8ffe1!important;
+  background:rgba(201,255,177,.085)!important;
+  box-shadow:inset 0 1px 0 rgba(231,255,224,.035);
+}
+.tabbar .tab:active{transform:scale(.97)}
+/* The floating nav is out of normal flow; preserve visible bottom actions. */
+.page:not(#live){padding-bottom:104px}
+#live{padding-bottom:0}
+#live .lact{
+  margin-bottom:74px;
+  padding-bottom:max(12px,env(safe-area-inset-bottom,0px));
+}
+/* Live scene: use Opal's muted black + luminous mint/aqua, without changing layout. */
+#live{
+  background:
+    radial-gradient(circle at 50% 25%,rgba(201,255,177,.045),transparent 24%),
+    radial-gradient(circle at 50% 70%,rgba(121,231,220,.035),transparent 28%),
+    #050706;
+}
+#live:before{opacity:.58}
+#live:after{opacity:.32}
+.live-brand span{color:rgba(216,238,220,.52)}
+.status{
+  background:rgba(255,255,255,.055);
+  border-color:rgba(255,255,255,.085);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.camb{
+  background:rgba(255,255,255,.055)!important;
+  border-color:rgba(255,255,255,.11)!important;
+  color:#e9faec!important;
+}
+.camb.on{
+  background:rgba(201,255,177,.14)!important;
+  color:var(--opal-soft)!important;
+  border-color:rgba(201,255,177,.20)!important;
+}
+.meter i{background:rgba(201,255,177,.22)!important}
+.lyrics:before{opacity:.62}
+.lyrics:after{opacity:.42}
+.ln.cur{
+  color:#f4fbf5;
+  text-shadow:0 0 22px rgba(201,255,177,.14),0 8px 26px rgba(0,0,0,.5);
+}
+.ln.nx{color:rgba(220,237,224,.40)}
+.ln.pv{color:rgba(216,231,220,.16)}
+.prog{background:rgba(255,255,255,.07)}
+.prog i{
+  background:linear-gradient(90deg,var(--opal-mint),var(--opal-aqua));
+  box-shadow:0 0 11px rgba(190,255,205,.35);
+}
+.lact button{
+  background:rgba(24,29,27,.72)!important;
+  border-color:rgba(255,255,255,.085)!important;
+  color:rgba(237,247,239,.82)!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.035);
+}
+.lact button.main{
+  background:linear-gradient(135deg,var(--opal-soft),var(--opal-aqua))!important;
+  color:#102016!important;
+  border-color:rgba(224,255,231,.58)!important;
+  box-shadow:0 10px 28px rgba(137,246,199,.16),inset 0 1px 0 rgba(255,255,255,.84);
+}
+/* Sheets / controls use the same soft-glass hierarchy. */
+.sheet{
+  background:rgba(18,22,20,.96);
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:0 -18px 42px rgba(0,0,0,.28);
+  backdrop-filter:blur(22px) saturate(125%);
+  -webkit-backdrop-filter:blur(22px) saturate(125%);
+}
+.sheet input[type=text]{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.06);
+}
+.act{
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.055);
+  color:var(--opal-mint);
+  box-shadow:0 8px 20px rgba(0,0,0,.12);
+}
+.act.red{color:#ff8b88}
+.sethead{
+  background:rgba(18,22,20,.78);
+  border-color:rgba(255,255,255,.055);
+  box-shadow:0 10px 26px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.018);
+}
+.seg2{background:rgba(255,255,255,.065)}
+.seg2 button{color:rgba(232,241,234,.62)}
+.seg2 button.on{background:rgba(201,255,177,.11);color:#d7ffca;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.seg{background:rgba(255,255,255,.065)}
+.seg button{color:rgba(238,247,240,.62)}
+.seg button.on{background:rgba(201,255,177,.12);color:#dcffd0}
+.sw.on{background:var(--opal-lime)}
+#toast{background:rgba(23,27,25,.92);border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+/* Light appearance: same hierarchy, inverse surface values. */
+:root[data-theme="light"]{
+  --bg:#f4f7f4;
+  --card:rgba(255,255,255,.88);
+  --tx:#172019;
+  --tx2:rgba(41,57,46,.56);
+  --sep:rgba(36,55,43,.10);
+  --blue:#236d42;
+  --bar:rgba(250,252,250,.84);
+}
+:root[data-theme="light"] body{background:#e6ebe7}
+:root[data-theme="light"] .page:not(#live){
+  background:
+    radial-gradient(circle at 10% 0%,rgba(145,202,157,.14),transparent 27%),
+    radial-gradient(circle at 90% 18%,rgba(125,194,188,.12),transparent 24%),
+    #f4f7f4;
+}
+:root[data-theme="light"] .group,
+:root[data-theme="light"] .sethead{
+  background:rgba(255,255,255,.82);
+  border-color:rgba(35,58,43,.075);
+  box-shadow:0 10px 25px rgba(35,55,42,.07),inset 0 1px 0 rgba(255,255,255,.92);
+}
+:root[data-theme="light"] .row+.row:before{border-top-color:rgba(35,58,43,.065)}
+:root[data-theme="light"] .row .t b,
+:root[data-theme="light"] h1{color:#172019}
+:root[data-theme="light"] .row .t span,
+:root[data-theme="light"] .note,
+:root[data-theme="light"] .lbl{color:rgba(43,59,48,.55)}
+:root[data-theme="light"] .btn{
+  background:linear-gradient(135deg,#e7fadd,#9cdcc1);
+  color:#163320;
+  box-shadow:0 10px 24px rgba(69,123,86,.12),inset 0 1px 0 rgba(255,255,255,.94);
+}
+:root[data-theme="light"] .btn.g{
+  background:rgba(255,255,255,.84);
+  color:#286d43;
+  border-color:rgba(38,75,50,.08);
+}
+:root[data-theme="light"] .tabbar{
+  background:rgba(255,255,255,.82)!important;
+  border-color:rgba(32,51,39,.09)!important;
+  box-shadow:0 15px 34px rgba(47,67,53,.12),inset 0 1px 0 rgba(255,255,255,.95);
+}
+:root[data-theme="light"] .tabbar .tab{color:rgba(34,54,41,.46)!important}
+:root[data-theme="light"] .tabbar .tab.on{color:#214b31!important;background:rgba(51,127,76,.09)!important}
+:root[data-theme="light"] .sheet{
+  background:rgba(248,250,248,.95);
+  color:#172019;
+  border-color:rgba(35,58,43,.08);
+}
+:root[data-theme="light"] .sheet input[type=text]{background:#fff;color:#172019;border-color:rgba(35,58,43,.07)}
+:root[data-theme="light"] .act{background:rgba(255,255,255,.88);color:#286d43;border-color:rgba(35,58,43,.07)}
+:root[data-theme="light"] .act.red{color:#cc4841}
+:root[data-theme="light"] #live .lact button{background:rgba(255,255,255,.86)!important;color:#21492f!important;border-color:rgba(34,64,44,.08)!important}
+:root[data-theme="light"] #live .lact button.main{background:#214a2f!important;color:#fff!important;border-color:#214a2f!important}
+:root[data-theme="light"] #live .camb{background:rgba(255,255,255,.78)!important;color:#1a2820!important;border-color:rgba(30,48,37,.10)!important}
+:root[data-theme="light"] #live .ln.cur{color:#18251c!important;text-shadow:0 0 18px rgba(55,111,72,.08)}
+:root[data-theme="light"] #live .ln.nx{color:rgba(29,46,35,.54)!important}
+:root[data-theme="light"] #live .ln.pv{color:rgba(29,46,35,.18)!important}
+:root[data-theme="light"] #live .prog{background:rgba(30,50,38,.10)}
+:root[data-theme="light"] #live .prog i{background:linear-gradient(90deg,#347b55,#80c89a)!important;box-shadow:none}
+:root[data-theme="light"] #live .live-brand span{color:rgba(25,43,31,.56)}
+:root[data-theme="light"] #live{background:radial-gradient(circle at 50% 24%,rgba(124,185,132,.10),transparent 25%),#f1f5f1}
+:root[data-theme="light"] #live:before{opacity:.16}
+:root[data-theme="light"] #live:after{opacity:.10;border-color:rgba(50,107,70,.08);box-shadow:none}
+:root[data-theme="light"] .lyrics:before{opacity:.12}
+:root[data-theme="light"] .lyrics:after{opacity:.10}
+@media (max-width:499px){
+  .tabbar{width:calc(100% - 26px)!important}
+  #live .lact{margin-bottom:72px}
+}
+@media (orientation:landscape) and (max-height:559px){
+  .tabbar{bottom:8px!important;min-height:56px}
+  .page:not(#live){padding-bottom:88px}
+  #live .lact{margin-bottom:58px}
+}
+
+/* ===== v2.2 UI collision fix + Chroma color system ===== */
+:root{
+  --nav-h:64px;
+  --nav-bottom:10px;
+  --nav-space:90px;
+  --ui-mint:#c9ffb1;
+  --ui-aqua:#79e7dc;
+  --ui-lime:#b8ff83;
+  --ui-dark:#07100b;
+}
+/* Navigation never covers content: pages reserve the measured floating-nav footprint. */
+.page:not(#live){padding-bottom:calc(var(--nav-space) + env(safe-area-inset-bottom,0px))!important;}
+#live{padding-bottom:calc(var(--nav-space) + 14px + env(safe-area-inset-bottom,0px))!important;}
+#live.cam{padding-bottom:0!important;}
+#live .lact{margin-bottom:0!important; padding-bottom:14px!important;}
+/* sheets / preview / recognition must sit above the floating nav */
+.mask{z-index:55!important;}
+.sheet{z-index:60!important;}
+#mrec{z-index:70!important;}
+#pv{z-index:80!important;}
+#toast{z-index:90!important;}
+/* Sheets get bottom breathing room so the last action is never hidden under the home indicator. */
+.sheet{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px) + 8px)!important;max-height:min(88%,760px);overflow:auto;}
+/* Floating nav: visually close to Opal but kept inside app bounds. */
+.tabbar{
+  bottom:max(var(--nav-bottom),env(safe-area-inset-bottom,0px))!important;
+  width:min(calc(100% - 26px),360px)!important;
+  min-height:var(--nav-h)!important;
+  padding:5px!important;
+  border-radius:24px!important;
+  overflow:hidden;
+}
+.tabbar .tab{min-height:50px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.tabbar .tab svg{flex:none!important;}
+/* Preserve button dimensions and avoid text squeezing on narrow screens. */
+#live .lact{gap:10px;}
+#live .lact button{min-width:0;flex:1 1 0;}
+#live .lact button.main{flex:1.18 1 0;}
+/* Live header stays above ambient decoration. */
+#live .lhead{z-index:15;}
+#live #aa{z-index:20;}
+/* Camera controls are a separate layer; no floating nav in camera mode. */
+#live.cam #cc{z-index:35!important;}
+#app.cam .tabbar{display:none!important;}
+/* Touch targets remain at least 44px without changing the page's information architecture. */
+.camb{min-width:36px;min-height:36px;}
+/* Light mode: keep contrast while retaining the same Opal hierarchy. */
+:root[data-theme="light"] .tabbar{background:rgba(250,253,250,.88)!important;}
+:root[data-theme="light"] .sheet{background:rgba(248,250,248,.97)!important;}
+/* Smaller devices: make the reserve area slightly denser but still collision-safe. */
+@media (max-width:430px){
+  :root{--nav-h:62px;--nav-bottom:8px;}
+  .tabbar{width:calc(100% - 24px)!important;}
+}
+@media (orientation:landscape) and (max-height:559px){
+  :root{--nav-h:56px;--nav-bottom:7px;}
+  #live{padding-bottom:calc(var(--nav-space) + 8px)!important;}
+  #live .lact{padding-bottom:8px!important;}
+}
+
+
+/* ===== v2.3: settings-driven live stage + collision-safe motion ===== */
+:root{
+  --scene-bg:#050706;
+  --scene-cur:#f7fff9;
+  --scene-nx:rgba(220,237,224,.42);
+  --scene-pv:rgba(216,231,220,.16);
+  --scene-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  --scene-fw:700;
+  --scene-lh:1.35;
+  --scene-align:left;
+  --scene-shadow:0 0 22px rgba(201,255,177,.14),0 8px 26px rgba(0,0,0,.50);
+}
+/* One authoritative source for the floating-nav footprint. */
+.page:not(#live){padding-bottom:calc(var(--nav-space) + env(safe-area-inset-bottom,0px))!important;}
+#live{padding-bottom:calc(var(--nav-space) + 14px + env(safe-area-inset-bottom,0px))!important;}
+#live.cam{padding-bottom:0!important;}
+#live .lact{margin-bottom:0!important;}
+
+/* Live stage color and typography now follow Settings instead of hard-coded colors. */
+#live:not(.cam){background:var(--scene-bg)!important;}
+#live .lyrics{font-family:var(--scene-font)!important;text-align:var(--scene-align)!important;}
+#live .ln{font-family:var(--scene-font)!important;font-weight:var(--scene-fw)!important;line-height:var(--scene-lh)!important;}
+#live .ln.cur{color:var(--scene-cur)!important;text-shadow:var(--scene-shadow)!important;}
+#live .ln.nx{color:var(--scene-nx)!important;}
+#live .ln.pv{color:var(--scene-pv)!important;}
+#live .live-brand .status{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif!important;
+  font-style:normal!important;font-weight:500!important;letter-spacing:0!important;
+}
+#live .live-brand .status .dot{font-family:inherit!important;}
+
+/* Remove any accidental typography payload from the live status area. */
+#live .live-brand .status select,
+#live .live-brand .status input,
+#live .live-brand .status .font,
+#live .live-brand .status [data-font]{display:none!important;}
+
+/* Chroma-driven stage wash. */
+#live:not(.cam)::before{background:var(--scene-glow-1,transparent)!important;}
+#live:not(.cam)::after{border-color:var(--scene-ring,rgba(255,255,255,.08))!important;box-shadow:var(--scene-ring-shadow,none)!important;}
+#live:not(.cam) .lyrics::before{background:var(--scene-lyric-glow,radial-gradient(circle,transparent,transparent))!important;}
+#live:not(.cam) .lyrics::after{background:var(--scene-lyric-ring,conic-gradient(transparent,transparent))!important;}
+#live:not(.cam) .prog i{background:linear-gradient(90deg,var(--scene-accent,#c9ffb1),var(--scene-accent2,#79e7dc))!important;}
+
+/* Opal-style motion surfaces. */
+.nav-anim-target{will-change:transform,opacity;}
+#live .ln{will-change:transform,opacity,filter;}
+#live .lact button,#live .camb,.chip,.sethead,.tabbar .tab{will-change:transform;}
+@media (prefers-reduced-motion:reduce){#live .ln,#live .lact button,#live .camb,.chip,.sethead,.tabbar .tab{will-change:auto;}}
+
+/* Re-check the collision model at very narrow sizes. */
+@media (max-width:380px){
+  :root{--nav-h:60px;--nav-bottom:7px;}
+  #live .lhead{padding-left:14px;padding-right:12px;}
+  .live-brand>span{font-size:12px;letter-spacing:2.4px;}
+  .live-brand .status{max-width:calc(100vw - 145px);font-size:10.5px;}
+  #live .live-head-right{gap:5px!important;}
+  #live .camb{width:36px;height:36px;min-width:36px;}
+  #live .camb svg{width:18px!important;height:18px!important;}
+  #live .lact{padding-left:13px;padding-right:13px;gap:7px;}
+  #live .lact button{min-height:47px;font-size:14px;padding-left:8px;padding-right:8px;}
+  .tabbar{width:calc(100% - 20px)!important;}
+}
+
+
+.empty-list{min-height:150px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;color:var(--tx2)}
+.empty-list b{font-size:16px;color:var(--tx)}
+.empty-list span{font-size:13px;line-height:1.5}
+.empty-mark{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;background:color-mix(in srgb,var(--blue) 12%,transparent);color:var(--blue);font-size:24px}
+.empty-list.compact{min-height:64px;padding:16px}
+.about-card{display:flex;align-items:center;gap:14px;padding:18px;background:var(--card);border-radius:16px}
+.about-mark{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;line-height:1.05;font-weight:800;letter-spacing:.8px;background:linear-gradient(145deg,var(--blue),var(--opal-cyan,#64d2ff));color:#06110e;box-shadow:0 8px 24px rgba(0,0,0,.16)}
+.about-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.about-copy b{font-size:17px;color:var(--tx)}
+.about-copy span{font-size:13px;color:var(--tx2)}
+.about-meta{display:flex;flex-direction:column;gap:4px;padding:10px 4px 0;color:var(--tx2);font-size:12px;line-height:1.5}
+</style>
+
+<!-- UI libraries: chroma.js provides the adaptive Opal palette; anime.js provides lightweight interaction motion. -->
+<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+</head>
+<body>
+<div id="app">
+ <section class="page" id="p-list">
+  <div class="navrow"><h1>歌单</h1><label class="addb">＋ 导入<input type="file" id="fi" accept="audio/*,.lrc,.txt" multiple hidden></label></div>
+  <div class="group" id="songs"></div>
+  <p class="note" id="imsg">暂无已导入歌曲。点击「＋ 导入」添加音频，可同时选择 .lrc / .txt 歌词；音频仅在本机解析。</p>
+  <button class="btn" onclick="go('live');start()">进入现场模式</button>
+ </section>
+ <section class="page on" id="live"><video id="cv" playsinline muted autoplay></video><div class="flash" id="flash"></div>
+  <div class="lhead"><div class="live-brand"><span>LIVE SYNC</span><div class="status"><span class="dot" id="dot"></span><span id="st">待机</span></div></div><div class="live-head-right"><span id="rtm" style="display:none;align-items:center;gap:6px;font-size:14px"><span class="recd"></span><span id="ct">0:00</span></span><div class="meter" id="meter"></div><button class="camb mrecb" id="mrecBtn" onclick="openMusicRec()" aria-label="识别音乐"><span class="mrec-pulse"></span><svg class="mrec-wave" viewBox="0 0 24 24"><path d="M4 15v-3M8 18V8M12 20V4M16 18V8M20 15v-6"/></svg></button><button class="camb" id="camBtn" onclick="toggleCam()" aria-label="相机"><svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg></button></div></div>
+  <div id="aa"><div class="aal">歌词位置<div class="seg" id="seg"><button data-p="top" onclick="setPos('top')">上</button><button data-p="mid" onclick="setPos('mid')">中</button><button data-p="bot" class="on" onclick="setPos('bot')">下</button></div></div><div class="aal">透明度<input type="range" min="0.3" max="1" step="0.05" value="0.85" oninput="CM.op=+this.value;draw()"></div><div class="aal">字幕版（歌词写入成片）<div class="sw" id="burn" onclick="togBurn()"></div></div></div>
+  <div class="song" id="sname"></div>
+  <div class="lyrics" id="lyr"></div>
+  <div class="prog"><i id="pg"></i></div>
+  <!-- 开发调试面板：开发模式下由 设置 > 识别与调试 > 调试面板 开启 -->
+  <div class="dbg" id="dbg"><div id="dbgr"></div><button class="act" id="lb" onclick="loseSig()" style="margin:8px 0 0;padding:8px;font-size:14px">模拟信号丢失</button><label class="act" style="display:block;text-align:center;margin:8px 0 0;padding:8px;font-size:14px;cursor:pointer">用音频文件代替麦克风（测试）<input type="file" id="ff" accept="audio/*" hidden onchange="feedFile(this.files[0]);this.value=''"></label><label>匹配阈值 <b id="thv">0.25</b><input type="range" min="0.1" max="1" step="0.05" value="0.25" oninput="setTh(this.value)"></label><label>丢失判定 <b id="lov">8</b>秒<input type="range" min="3" max="20" step="1" value="8" oninput="setLo(this.value)"></label><label>输入设备 <select id="dev" onchange="chDev(this.value)"></select></label><label><input type="checkbox" checked onchange="st.free=this.checked"> 丢失后按原进度继续</label></div>
+  <div id="cc" style="display:none"><div class="cmode"><button data-m="photo" class="on" onclick="setMode('photo')">照片</button><button data-m="video" onclick="setMode('video')">视频</button></div><div class="crow"><button class="cb" id="gal" onclick="openGal()" aria-label="相册">▢</button><button class="shut" id="shut" onclick="shutter()" aria-label="快门"></button><button class="cb" id="rt" onclick="rightBtn()" aria-label="切换摄像头">⟲</button></div></div>
+  <div class="lact" id="la"><button onclick="openSheet()"><span class="act-ico">♫</span><span>选歌</span></button><button class="main" id="mainBtn" onclick="toggle()"><span class="main-dot"></span><span>开始同频</span></button></div>
+ </section>
+ <section class="page" id="p-set"><h1 id="setTitle">设置<span class="devb">开发模式</span></h1><div id="setc"></div><div style="height:24px"></div></section>
+ <nav class="tabbar">
+  <button class="tab" data-t="list"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>歌单</button>
+  <button class="tab on" data-t="live"><svg viewBox="0 0 24 24"><path d="M4 10v4M8 6v12M12 3v18M16 8v8M20 11v2"/></svg>现场</button>
+  <button class="tab" data-t="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>设置</button>
+ </nav>
+ <div class="sheet" id="sheet2"><div class="grab"></div><h3 id="s2t"></h3><input type="text" id="s2n" placeholder="歌曲名称" onchange="renameSong()"><p class="note" id="s2i"></p><button class="act" onclick="document.getElementById('fl').click()">导入 / 替换歌词（.lrc 或 .txt）</button><button class="act" onclick="clearLrc()">清除歌词</button><button class="act red" id="s2d" onclick="delSong()">删除歌曲</button><button class="act" onclick="closeSheet()">完成</button></div><input type="file" id="fl" accept=".lrc,.txt" hidden>
+ <div class="sheet" id="sheet3" style="max-height:82%;overflow:auto"><div class="grab"></div><div class="gallery-head"><div><h3 style="margin:0;text-align:left">相册</h3><div class="count" id="galCount">0 个项目</div></div><button onclick="closeSheet()">完成</button></div><div class="gallery-tools"><button onclick="renderGal()">刷新</button><button class="red" onclick="clearGal()">清空</button></div><div class="group" id="gl" style="margin-top:10px"></div><p class="note">点缩略图预览；照片和视频都可以单独保存或删除。</p></div>
+ <input type="file" id="fcap" capture="environment" hidden>
+ <div id="mrec" onclick="if(event.target===this)closeMusicRec()"><div class="mrec-sheet"><div class="mrec-grab"></div><div class="mrec-state" id="mrecState">正在聆听现场音乐</div><div class="mrec-icon"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div><div id="mrecResult"><div class="mrec-loading" id="mrecLoading">正在识别<i></i><i></i><i></i></div></div><div class="mrec-actions" id="mrecActions" style="display:none"><button onclick="closeMusicRec()">关闭</button><button class="main" onclick="useMusicResult()">使用这首歌</button></div><div class="mrec-demo">演示模式 · 后续可接入外部音乐识别 App</div></div></div><div id="pv"></div><div id="toast"></div>
+ <div class="mask" id="mask" onclick="closeSheet()"></div>
+ <div class="sheet" id="sheet"><div class="grab"></div><h3>手动选歌</h3><div class="group" id="songs2"></div><button class="btn g" onclick="closeSheet()">取消</button></div>
+</div>
+<script>
+/* ===== 开发开关 =====
+   默认关闭，隐藏「识别与调试」「权限与环境」等开发项。
+   进入方式：设置页连点标题「设置」5 次；再连点 5 次关闭。
+   开启状态记在本机，刷新后保持。 */
+var DEV=false;
+try{DEV=localStorage.getItem("lsync.dev")==="1"}catch(e){}
+function applyDevFlag(){
+  document.documentElement.setAttribute("data-dev",DEV?"1":"0");
+  st.dbg=P.dbg&&DEV;
+}
+
+var S=[];
+var st={tab:"live",i:0,run:false,status:"idle",t:0,dim:true,mic:false,dbg:false,lvl:0,stream:null,an:null,buf:null};
+var $=function(i){return document.getElementById(i)};
+var LABEL={idle:"待机",listening:"识别中…",locked:"已锁定",lost:"匹配丢失，按原进度继续"};
+var STEP=4,TM;
+document.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){go(b.dataset.t)}});
+function setStatus(s){if(s!==st.status&&(s==="locked"||s==="lost"))vib(s==="lost"?[30,40,30]:12);st.status=s;if(s==="locked")st.hasLock=true;$('dot').className='dot '+(s==='idle'?'':s);$('st').textContent=(s==='lost'&&!st.free)?'匹配丢失，重新定位中…':LABEL[s];$('mainBtn').innerHTML=st.run?'<span class="main-dot"></span><span>暂停同频</span>':'<span class="main-dot"></span><span>开始同频</span>';dbgUpd()}
+function toggle(){st.run?stop():start()}
+var ml=$("meter");for(var q=0;q<7;q++)ml.appendChild(document.createElement("i"));
+function lvl(v){var b=ml.children;for(var k=0;k<b.length;k++){var on=v*b.length>k;b[k].style.height=on?(6+k*2)+"px":"4px";b[k].style.background=on?"#34c759":"#48484a"}}
+function openSheet(){$("mask").classList.add("on");$("sheet").classList.add("on")}
+/* ===== 真实音频引擎：指纹 + 偏移投票 ===== */
+var SR=8000,FN=512,HOP=256,FT=HOP/SR,DB=new Map(),RING=new Float32Array(SR*8),rp=0,rfill=0,AC=null,SP=null,TST=null,tick=0;
+function fft(re,im){var n=re.length;for(var i=1,j=0;i<n;i++){var b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){var t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+for(var l=2;l<=n;l<<=1){var a=-2*Math.PI/l,wr=Math.cos(a),wi=Math.sin(a);for(var i=0;i<n;i+=l){var cr=1,ci=0;for(var k=0;k<l/2;k++){var u=i+k,v=u+l/2,xr=re[v]*cr-im[v]*ci,xi=re[v]*ci+im[v]*cr;re[v]=re[u]-xr;im[v]=im[u]-xi;re[u]+=xr;im[u]+=xi;var t2=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t2}}}}
+var WIN=new Float32Array(FN);for(var q2=0;q2<FN;q2++)WIN[q2]=.5-.5*Math.cos(2*Math.PI*q2/FN);
+function fp(x){var nf=Math.floor((x.length-FN)/HOP)+1,P=[],re=new Float32Array(FN),im=new Float32Array(FN),E=[6,20,48,100,180,256];
+for(var f=0;f<nf;f++){for(var k=0;k<FN;k++){re[k]=x[f*HOP+k]*WIN[k];im[k]=0}fft(re,im);var pk=[],mx=[];
+for(var b=0;b<5;b++){var bm=0,bi=-1;for(k=E[b];k<E[b+1];k++){var m=re[k]*re[k]+im[k]*im[k];if(m>bm){bm=m;bi=k}}mx.push(bm);pk.push(bi)}
+var av=(mx[0]+mx[1]+mx[2]+mx[3]+mx[4])/5,o=[];for(b=0;b<5;b++)if(mx[b]>=av*.5&&mx[b]>1e-6)o.push(pk[b]);P.push(o)}
+var H=[];for(f=0;f<nf;f++)for(var i=0;i<P[f].length;i++){var n=0;for(var d=2;d<=40&&n<3;d++){var g=P[f+d];if(!g)break;for(var j=0;j<g.length&&n<3;j++,n++)H.push([(P[f][i]<<14)|(g[j]<<6)|d,f])}}
+return{H:H,nf:nf}}
+$("fi").onchange=async function(e){var fs=[].slice.call(e.target.files),isL=function(f){return /\.(lrc|txt)$/i.test(f.name)},l=fs.filter(isL)[0],as=fs.filter(function(f){return !isL(f)});
+for(var f of as){$("imsg").textContent="正在解析「"+f.name+"」…";try{await addSong(f,l)}catch(x){$("imsg").textContent="无法解码「"+f.name+"」，请换成 mp3 / m4a / wav";return}}
+if(as.length)$("imsg").textContent="已导入 "+as.length+" 首。进入现场模式即可开始识别。"};
+function attachMic(s,shared){var C0=window.AudioContext||window.webkitAudioContext;if(!AC)AC=new C0();if(AC.state==="suspended")AC.resume();var ra=AC.sampleRate/SR,ph=0,ac=0,cn=0;st.stream=s;st.sharedMic=!!shared;try{st.dev=s.getAudioTracks()[0].getSettings().deviceId||st.dev}catch(x){}listDev();SP=AC.createScriptProcessor(4096,1,1);
+SP.onaudioprocess=function(e){var d=e.inputBuffer.getChannelData(0),m=0;for(var i=0;i<d.length;i++){var v=d[i];m=Math.max(m,Math.abs(v));ac+=v;cn++;ph++;if(ph>=ra){RING[rp]=ac/cn;rp=(rp+1)%RING.length;rfill++;ac=0;cn=0;ph-=ra}}st.lvl=Math.min(1,m*3)};
+AC.createMediaStreamSource(s).connect(SP);SP.connect(AC.destination);if(AC.state==="suspended")AC.resume();return s}
+function openMic(){if(st.stream)return Promise.resolve(st.stream);if(st.micReq)return st.micReq;if(CM.stream&&CM.stream.getAudioTracks().length){var s=CM.stream.getAudioTracks()[0];s.enabled=true;return Promise.resolve(attachMic(CM.stream,true))}if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$("st").textContent="麦克风不可用："+eh({name:"TypeError"});return Promise.resolve(null)}var C0=window.AudioContext||window.webkitAudioContext;if(!AC)AC=new C0;if(AC.state==="suspended")AC.resume();
+st.micReq=navigator.mediaDevices.getUserMedia({audio:{deviceId:st.dev?{exact:st.dev}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){return attachMic(s,false)}).catch(function(e){if(AC){AC.close();AC=null}st.dev="";st.mic=false;P.mic=false;save();rerender();$("st").textContent="麦克风不可用："+eh(e);return null});
+st.micReq.then(function(){st.micReq=null},function(){st.micReq=null});return st.micReq}
+function closeMic(){clearInterval(FD);if(st.stream){var ts=st.stream.getAudioTracks();if(st.sharedMic){ts.forEach(function(t){t.enabled=false})}else{st.stream.getTracks().forEach(function(t){t.stop()})}st.stream=null;st.sharedMic=false}if(SP){SP.disconnect();SP=null}if(AC){AC.close();AC=null}rfill=0;st.lvl=0}
+function win(sec){var n=sec*SR,L=RING.length,o=new Float32Array(n);for(var i=0;i<n;i++)o[i]=RING[(rp-n+i+L)%L];return o}
+function match(){st.fill=Math.min(5,rfill/SR);if(rfill<SR*3){st.score=0;st.s2=0;st.cs=0;st.why="缓冲中，需要至少 3 秒音频";return false}var q=fp(win(5)),V=new Map(),i,j;
+for(i=0;i<q.H.length;i++){var e=DB.get(q.H[i][0]);if(!e)continue;for(j=0;j<e.length;j++){var k=Math.floor(e[j]/1048576)*3000000+(e[j]%1048576-q.H[i][1])+1500000;V.set(k,(V.get(k)||0)+1)}}
+var bk=-9,bs=0,s2=0;V.forEach(function(c,k){var t=c+(V.get(k-1)||0)+(V.get(k+1)||0);if(t>bs){if(Math.abs(k-bk)>2)s2=bs;bs=t;bk=k}else if(t>s2&&Math.abs(k-bk)>2)s2=t});
+st.score=bs;st.s2=s2;st.cs=bs>0?Math.min(1,bs/60)*(bs-s2)/bs:0;
+if(st.cs<st.th){st.why=bs<30?"匹配分太低":"区分度不足：与第二名太接近";return false}st.why="";
+var now=performance.now(),sid=Math.floor(bk/3000000),ix=S.findIndex(function(x){return x.id===sid});if(ix<0)return false;st.i=ix;st.base=(bk%3000000-1500000+q.nf+1)*FT;st.baseAt=now;st.lastOk=now;st.conf=st.cs;renderSongs();return true}
+function draw(){if(!S.length){$("lyr").style.opacity=1;$("sname").textContent="暂无歌曲";$("lyr").innerHTML='<div class="ln cur empty-live" style="font-size:24px;opacity:.78">请先在歌单导入歌曲</div>';$("pg").style.width="0%";return}var s=S[st.i],L=s.l,c=0,h="",fs=Math.round(P.fs*(CM.on?.78:1));$("lyr").style.opacity=CM.on?CM.op:1;$("sname").textContent=s.n+" · "+s.a;$("lb").textContent=st.mic?"自测播放":"模拟信号丢失";
+if(st.mic&&st.run&&(!st.hasLock||(!st.free&&st.status!=="locked"))){$("lyr").innerHTML='<div class="ln cur" style="font-size:28px;color:#8e8e93">'+$("st").textContent+'</div>';return}
+if(s.tm){for(var k=0;k<s.tm.length;k++)if(s.tm[k]<=st.t)c=k}else c=Math.min(L.length-1,Math.floor(st.t/STEP));
+L.forEach(function(x,k){if(k<c-(P.prev?1:0)||k>c+P.nx)return;var cl=k===c?"cur":k===c+1?"nx":k<c?"pv":"";h+='<div class="ln '+cl+'" style="'+(k===c?"font-size:"+fs+"px":k===c+1?"font-size:"+Math.round(fs*.76)+"px":"")+';'+(P.dim?"opacity:"+(k===c?P.dimLv:P.dimLv*.85):"")+'">'+x+'</div>'});
+$("lyr").innerHTML=h;$("pg").style.width=Math.min(100,st.t/(s.dur||L.length*STEP)*100)+"%"}
+function start(){if(st.run)return;if(!S.length){toast("请先在歌单页导入歌曲");setStatus("idle");return}if(st.mic&&!S.some(function(s){return s.real})){$("st").textContent="请先在歌单页导入歌曲";return}
+st.run=true;wake();setStatus("listening");if(st.mic)openMic();else setTimeout(function(){if(st.run&&st.status==="listening")setStatus("locked")},1800);loop()}
+function stop(){st.run=false;st.hasLock=false;wake();clearInterval(TM);if(TST)TST.pause();setStatus("idle");lvl(0);closeMic();draw()}
+/* 开发用：模拟信号丢失 / 自测播放 */
+function loseSig(){if(st.mic){if(TST&&!TST.paused){TST.pause();return}var s=S[st.i].real?S[st.i]:S.filter(function(x){return x.real})[0];if(!s)return;TST=new Audio(s.aud);TST.play();return}
+if(!st.run)return;setStatus("lost");setTimeout(function(){if(st.run&&st.status==="lost")setStatus("listening")},1500);setTimeout(function(){if(st.run&&st.status==="listening")setStatus("locked")},3200)}
+function loop(){clearInterval(TM);tick=0;TM=setInterval(function(){tick++;var now=performance.now(),v;
+if(st.mic&&st.stream){if(tick%10===0&&match()&&st.status!=="locked")setStatus("locked");
+if(st.hasLock&&(st.free||st.status==="locked"))st.t=st.base+(now-st.baseAt)/1000;if(st.status==="locked"&&now-st.lastOk>st.lo*1000)setStatus("lost");v=st.lvl}
+else{if(st.hasLock&&(st.free||st.status==="locked")){var s=S[st.i];st.t+=.1;if(st.t>=(s.dur||s.l.length*STEP)){st.t=0;if(!s.real){do{st.i=(st.i+1)%S.length}while(S[st.i].real);renderSongs()}}}
+v=st.status==="locked"?.35+Math.random()*.6:st.status==="lost"?.7+Math.random()*.3:.1+Math.random()*.2}
+if(tick%2===0){draw();camDraw()}lvl(st.run?v:0);if(st.dbg&&tick%5===0)dbgUpd()},100)}
+/* ===== 歌曲管理 ===== */
+var NID=1000;
+function parseLrc(t,dur){var a=[],pl=[];t.split(/\r?\n/).forEach(function(s){var m=s.match(/^\s*\[(\d+):(\d+(?:\.\d+)?)\](.*)$/);if(m){if(m[3].trim())a.push([+m[1]*60+ +m[2],m[3].trim()])}else if(s.trim()&&!/^\s*\[[a-z]+:/i.test(s))pl.push(s.trim())});
+if(a.length){a.sort(function(x,y){return x[0]-y[0]});return{tm:a.map(function(x){return x[0]}),ls:a.map(function(x){return x[1]}),m:"时间轴歌词"}}
+if(pl.length)return{tm:pl.map(function(_,i){return i*dur/pl.length}),ls:pl,m:"歌词按时长均分"};
+return{tm:[0],ls:["（未导入歌词，仅显示进度）"],m:"无歌词"}}
+async function addSong(a,l){var ab=await a.arrayBuffer(),C=window.OfflineAudioContext||window.webkitOfflineAudioContext,
+buf=await new Promise(function(r,j){new C(1,1,SR).decodeAudioData(ab,r,j)}),r=fp(ds(buf.getChannelData(0),buf.sampleRate)),id=NID++;
+for(var i=0;i<r.H.length;i++){var h=r.H[i][0],v=id*1048576+r.H[i][1],e=DB.get(h);e?e.push(v):DB.set(h,[v])}
+var p=parseLrc(l?await l.text():"",buf.duration),d=Math.round(buf.duration);
+S.push({n:a.name.replace(/\.[^.]+$/,""),a:"已导入 · "+Math.floor(d/60)+":"+("0"+d%60).slice(-2),l:p.ls,tm:p.tm,m:p.m,dur:buf.duration,id:id,real:true,aud:URL.createObjectURL(a)});renderSongs()}
+function renderSongs(){var h="",h2="";if(!S.length){h='<div class="empty-list"><div class="empty-mark">♪</div><b>还没有歌曲</b><span>导入音频后即可在现场模式中进行同频</span></div>';h2='<div class="empty-list compact"><span>还没有可选择的歌曲</span></div>';}S.forEach(function(s,k){var r='<div class="row" onclick="pick('+k+')"><div class="t"><b>'+s.n+'</b><span>'+s.a+(s.real?" · "+s.m:"")+'</span></div>'+(k===st.i?'<span class="chk">✓</span>':s.real?'':'<span class="pill">'+s.l.length+' 句</span>');
+h+=r+(s.real?'<button class="more" onclick="event.stopPropagation();manage('+k+')">⋯</button>':'')+'</div>';h2+=r+'</div>'});
+$("songs").innerHTML=h;$("songs2").innerHTML=h2;
+var clr=$("clr");if(clr)clr.style.display=S.some(function(s){return s.real})?"block":"none"}
+function manage(k){st.mk=k;var s=S[k];$("s2t").textContent="管理歌曲";$("s2n").value=s.n;$("s2i").textContent=s.a+" · "+s.m;$("mask").classList.add("on");$("sheet2").classList.add("on")}
+function renameSong(){var v=$("s2n").value.trim();if(v){S[st.mk].n=v;renderSongs();draw()}}
+function setLrc(k,t){var s=S[k],p=parseLrc(t,s.dur);s.l=p.ls;s.tm=p.tm;s.m=p.m;$("s2i").textContent=s.a+" · "+s.m;renderSongs();draw()}
+$("fl").onchange=async function(e){var f=e.target.files[0];e.target.value="";if(f)setLrc(st.mk,await f.text())};
+function clearLrc(){setLrc(st.mk,"")}
+function rmSong(k){var s=S[k];if(TST&&TST.src===s.aud)TST.pause();DB.forEach(function(v,h){var n=v.filter(function(x){return Math.floor(x/1048576)!==s.id});n.length?DB.set(h,n):DB.delete(h)});URL.revokeObjectURL(s.aud);S.splice(k,1);
+if(st.i===k){st.i=0;st.t=0;st.hasLock=false;if(st.mic&&st.run)setStatus("listening")}else if(st.i>k)st.i--;renderSongs();draw()}
+function delSong(){var b=$("s2d");if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="确认删除（不可撤销）";return}rmSong(st.mk);closeSheet()}
+function clearAll(){var b=$("clr");if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="再点一次确认删除全部";setTimeout(function(){b.dataset.c="";b.textContent="删除全部已导入歌曲"},3000);return}
+b.dataset.c="";b.textContent="删除全部已导入歌曲";for(var k=S.length-1;k>=0;k--)if(S[k].real)rmSong(k);$("imsg").textContent="已清空导入的歌曲。"}
+function closeSheet(){$("mask").classList.remove("on");$("sheet").classList.remove("on");$("sheet2").classList.remove("on");$("sheet3").classList.remove("on");var b=$("s2d");b.dataset.c="";b.textContent="删除歌曲"}
+/* ===== 丢失后续播 / 调试控制 ===== */
+st.th=.25;st.lo=8;st.free=true;st.dev="";
+function setTh(v){st.th=+v;$("thv").textContent=(+v).toFixed(2)}
+function setLo(v){st.lo=+v;$("lov").textContent=v}
+function listDev(){if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices)return;navigator.mediaDevices.enumerateDevices().then(function(a){var o="",n=a.filter(function(d){return d.kind==="audioinput"});
+n.forEach(function(d,i){o+='<option value="'+d.deviceId+'"'+(d.deviceId===st.dev?" selected":"")+'>'+(d.label||"麦克风 "+(i+1))+'</option>'});$("dev").innerHTML=o||'<option>未检测到输入设备</option>'}).catch(function(){})}
+function chDev(id){st.dev=id;if(st.stream){closeMic();openMic()}}
+function pick(k){if(!S[k])return;st.i=k;st.t=0;renderSongs();if(st.tab==="live"||$("sheet").classList.contains("on")){closeSheet();go("live");
+if(st.run){var n=performance.now();st.base=0;st.baseAt=n;st.lastOk=n;setStatus("locked")}else{st.hasLock=false;setStatus("idle")}draw()}}
+function dbgUpd(){var d=$("dbg");var show=(st.dbg&&DEV);d.style.display=show?"block":"none";if(!show)return;var now=performance.now(),cs=st.cs||0;
+$("dbgr").innerHTML="状态 "+st.status+" · 位置 "+st.t.toFixed(1)+"s<br>实时置信度 "+(st.mic?cs.toFixed(2)+" / 阈值 "+st.th.toFixed(2):"模拟")+"（匹配分 "+(st.score||0)+"，第二名 "+(st.s2||0)+"）<br>"+(st.mic?"麦克风 "+(AC?AC.state+" "+AC.sampleRate+"Hz":"未开启")+" · 缓冲 "+(st.fill||0).toFixed(1)+"/5s · 电平 "+(st.lvl||0).toFixed(2)+"<br>"+(st.why?st.why+"<br>":""):"")+"距上次锁定 "+(st.lastOk?((now-st.lastOk)/1000).toFixed(1)+"s":"—")+" · 哈希 "+DB.size}
+function ds(x,sr){if(sr===SR)return x;var ra=sr/SR,o=new Float32Array(Math.floor(x.length/ra)),ph=0,ac=0,cn=0,p=0;for(var i=0;i<x.length&&p<o.length;i++){ac+=x[i];cn++;ph++;if(ph>=ra){o[p++]=ac/cn;ac=0;cn=0;ph-=ra}}return o}
+if(navigator.mediaDevices){listDev();navigator.mediaDevices.ondevicechange=listDev}
+/* ===== v1.0 拍摄：照片 / 视频 / 歌词叠加 / 相册 ===== */
+var CM={m:"photo",face:"environment",burn:false,pos:"bot",op:.85,ratio:"16:9",rec:null,chunks:[],mk:[],items:[],stream:null,aud:null,camReq:null,audReq:null};
+function fmt(s){s=Math.round(s||0);return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
+function toast(m){var e=$("toast");e.textContent=m;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(function(){e.classList.remove("on")},2200)}
+function closeCam(){if(CM.rec)return;if(CM.stream){var s=CM.stream,ats=s.getAudioTracks();if(st.sharedMic&&st.stream===s&&P.mic&&ats.length){s.getVideoTracks().forEach(function(t){t.stop()});CM.stream=null;st.stream=s;st.sharedMic=false}else{s.getTracks().forEach(function(t){t.stop()});CM.stream=null;if(st.stream===s){st.stream=null;st.sharedMic=false}}}$("cv").srcObject=null;if(CM.aud){CM.aud.getTracks().forEach(function(t){t.stop()});CM.aud=null}}
+
+/* 模式切换：只切换界面与音频轨开关，不重新请求摄像头。
+   需要音频时由 openCam 单独补请求音频轨。 */
+async function setMode(m){
+  if(CM.rec)return;
+  CM.m=m;
+  document.querySelectorAll(".cmode button").forEach(function(b){b.classList.toggle("on",b.dataset.m===m)});
+  $("shut").className="shut"+(m==="video"?" v":"");
+  if(CM.on&&m==="video"&&CM.stream&&!CM.stream.getAudioTracks().length){
+    await openCam(true,CM.face);
+  }
+  if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false})
+}
+function curLine(){if(!S.length)return["",""];if(st.mic&&st.run&&!st.hasLock)return["",""];var s=S[st.i],c=0;if(s.tm){for(var k=0;k<s.tm.length;k++)if(s.tm[k]<=st.t)c=k}else c=Math.min(s.l.length-1,Math.floor(st.t/STEP));return[s.l[c]||"",s.l[c+1]||""]}
+function drawLyr(g,w,h){var L=curLine();if(!L[0])return;var vr=$("live").getBoundingClientRect(),scale=w/Math.max(1,vr.width),fs=Math.max(12,Math.round(P.fs*(CM.on?.78:1)*scale)),nextFs=Math.round(fs*.76),pad=Math.round(24*scale),x=P.al==="left"?pad:P.al==="right"?w-pad:w/2,y=CM.pos==="top"?Math.round(h*.14):CM.pos==="mid"?Math.round(h*.5):Math.round(h*.78),a=CM.op*(P.dim?P.dimLv:1);
+g.save();g.textAlign=P.al==="left"?"left":P.al==="right"?"right":"center";g.textBaseline="middle";g.shadowColor=P.shadow?"rgba(0,0,0,.75)":"transparent";g.shadowBlur=P.shadow?fs*.3:0;g.fillStyle=P.cur;g.globalAlpha=a;g.font=P.fw+" "+fs+"px "+FONTS[P.font];g.fillText(L[0],x,y,w-pad*2);
+if(L[1]){g.globalAlpha=CM.op*(P.dim?P.dimLv*.85:1);g.fillStyle=P.nxc;g.font=P.fw+" "+nextFs+"px "+FONTS[P.font];g.fillText(L[1],x,y+Math.round(fs*P.lh),w-pad*2)}g.restore()}
+function shutter(){if(CM.fb){sysCap();return}if(!CM.stream){toast("摄像头未就绪");return}if(CM.m==="photo")snap();else CM.rec?stopRec():startRec()}
+function snap(){vib(15);var c=document.createElement("canvas");frame(c,CM.burn);var f=$("flash");f.classList.remove("on");void f.offsetWidth;f.classList.add("on");c.toBlob(function(b){if(b)addItem("photo",b,{})},"image/jpeg",.92)}
+function finishRec(){var r=CM.rec,b=new Blob(CM.chunks,{type:r.mimeType||"video/webm"});CM.rec=null;CM.A=null;if(CM.aud&&!st.mic)CM.aud.getTracks().forEach(function(t){t.enabled=false});if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false})
+if(st.tab!=="live")camOff();addItem("video",b,{dur:(Date.now()-CM.t0)/1000,marks:CM.mk.slice(),song:CM.song0,pos:CM.pos0})}
+function addItem(type,blob,x){var it={type:type,blob:blob,url:URL.createObjectURL(blob),ts:Date.now(),song:S[st.i].n,pos:st.t};for(var k in x)it[k]=x[k];CM.items.unshift(it);setThumb();toast(type==="photo"?"已拍照":"已保存视频到相册")}
+function setThumb(){var it=CM.items[0];$("gal").innerHTML=it?(it.type==="photo"?'<img src="'+it.url+'" style="width:100%;height:100%;object-fit:cover">':"▶"):"▢"}
+function openGal(){renderGal();$("mask").classList.add("on");$("sheet3").classList.add("on")}
+function renderGal(){var h="",n=CM.items.length;if($("galCount"))$("galCount").textContent=n+(n===1?" 个项目":" 个项目");CM.items.forEach(function(it,i){var sub=it.type==="photo"?"照片 · "+fmt(it.pos):"视频 · "+fmt(it.dur||0);if(it.ratio)sub+=" · "+it.ratio;var thumb=it.type==="photo"?'<img src="'+it.url+'">':'<video src="'+it.url+'#t=0.1" muted preload="metadata"></video>';h+='<div class="row gi"><div class="th" onclick="view('+i+')">'+thumb+'</div><div class="t"><b>'+it.song+'</b><span>'+sub+'</span></div><div class="gi-actions"><button onclick="view('+i+')">预览</button><button onclick="saveItem('+i+')">保存</button><button class="red" onclick="askDelItem('+i+')">删除</button></div></div>'});$("gl").innerHTML=h||'<p class="note">还没有拍摄内容</p>'}
+function view(i){var it=CM.items[i];CM.sel=i;var media=it.type==="photo"?'<img src="'+it.url+'">':'<video src="'+it.url+'" controls playsinline autoplay></video>';var acts='<div class="pv-actions"><button class="act g" onclick="saveItem('+i+')">保存</button><button class="act red" onclick="askDelItem('+i+')">删除</button></div>';$('pv').innerHTML=media+acts+'<button class="act" style="width:auto;padding:8px 16px;top:16px;right:16px" onclick="closePreview()">关闭</button>';$('pv').classList.add('on')}
+function closePreview(){$("pv").classList.remove("on");$("pv").innerHTML=""}
+function askDelItem(i){if(!CM.items[i])return;if(confirm("删除这份拍摄内容？"))delItem(i)}
+function delItem(i){if(!CM.items[i])return;URL.revokeObjectURL(CM.items[i].url);CM.items.splice(i,1);CM.sel=-1;renderGal();setThumb()}
+function clearGal(){if(!CM.items.length){toast("相册已经是空的");return}if(!confirm("清空全部拍摄内容？"))return;CM.items.forEach(function(it){URL.revokeObjectURL(it.url)});CM.items=[];CM.sel=-1;renderGal();setThumb();toast("已清空相册")}
+function fname(it){var d=new Date(it.ts),p=function(n){return("0"+n).slice(-2)};return"现场同频_"+it.song.replace(/[\\\/:*?"<>|]/g,"")+"_"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+"."+(it.type==="photo"?"jpg":/mp4|quicktime/.test(it.blob.type)?"mp4":"webm")}
+async function saveItem(i){var it=CM.items[i];try{var d=window.claude&&await claude.use("downloads");if(!d){toast("当前环境不支持直接保存，请长按照片或用视频播放器保存");return}await d.save({filename:fname(it),data:it.blob})}catch(e){if(!e||e.code!=="declined")toast("保存失败")}}
+/* ===== 音乐自动识别：演示接口 ===== */
+var MusicRecognition={adapter:null,identify:async function(ctx){if(this.adapter&&typeof this.adapter.identify==="function")return await this.adapter.identify(ctx);return await new Promise(function(resolve){setTimeout(function(){var real=S.filter(function(s){return s.real});if(!real.length){resolve({success:false,message:"暂无已导入歌曲，请先在歌单添加音乐"});return}var q=real[0];resolve({success:true,name:q.n,artist:q.a,score:"演示匹配",id:String(q.id||q.n),source:"demo"})},1050)})}};
+var MREC={open:false,busy:false,last:null};window.LSyncMusicRecognition=MusicRecognition;
+async function openMusicRec(){
+  if(MREC.busy)return;
+  MREC.open=true;MREC.busy=true;
+  $("mrec").classList.add("on");
+  $("mrecBtn").classList.add("active");
+  $("mrecState").textContent="正在聆听现场音乐";
+  $("mrecResult").innerHTML='<div class="mrec-loading">正在识别<i></i><i></i><i></i></div>';
+  $("mrecActions").style.display="none";
+  var r=await MusicRecognition.identify({tab:st.tab,song:S[st.i]||null,camera:CM.on});
+  MREC.busy=false;MREC.last=r;
+  $("mrecBtn").classList.remove("active");
+  if(!MREC.open)return;
+  if(!r||!r.success){
+    $("mrecState").textContent="暂未识别到音乐";
+    $("mrecResult").innerHTML='<div class="mrec-artist">'+((r&&r.message)||"请靠近音源后再次尝试")+'</div>';
+    return;
+  }
+  $("mrecState").textContent="识别成功";
+  $("mrecResult").innerHTML='<div class="mrec-title">'+(r.name||"未知歌曲")+'</div><div class="mrec-artist">'+(r.artist||"未知艺术家")+'</div><div class="mrec-score"><span class="mrec-dot"></span>'+(r.score||"匹配成功")+'</div>';
+  $("mrecActions").style.display="flex";
+}
+function closeMusicRec(){MREC.open=false;MREC.busy=false;$("mrec").classList.remove("on");$("mrecBtn").classList.remove("active")}
+function useMusicResult(){if(!MREC.last||!MREC.last.success)return;var ix=S.findIndex(function(x){return x.n===MREC.last.name});if(ix>=0){pick(ix);toast("已切换到「"+MREC.last.name+"」")}else{toast("识别成功："+MREC.last.name)}closeMusicRec()}
+
+/* ===== 拍摄并入「现场」页 ===== */
+CM.on=false;
+var PG={list:"p-list",live:"live",set:"p-set"};
+function go(t){var prev=st.tab;st.tab=t;for(var k in PG)$(PG[k]).classList.toggle("on",k===t);
+document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("on",b.dataset.t===t)});
+if(t==="live")draw();if(prev==="live"&&t!=="live"&&!CM.rec)camOff()}
+function setPos(p){CM.pos=p;var l=$("live");l.classList.remove("top","mid","bot");l.classList.add(p);document.querySelectorAll("#seg button").forEach(function(b){b.classList.toggle("on",b.dataset.p===p)})}
+function camDraw(){if(CM.rec&&(!st.mic||st.hasLock)){var n=S[st.i].n,m=CM.mk;if(!m.length||m[m.length-1].n!==n)m.push({n:n,t:(Date.now()-CM.t0)/1000})}}
+
+/* ===== 方向自适应：横屏 / 竖屏拍摄比例 ===== */
+function isPortrait(){try{return window.matchMedia("(orientation:portrait)").matches}catch(e){return window.innerHeight>=window.innerWidth}}
+function ratioVal(r){
+  r=r||"16:9";
+  if(r==="auto")r=isPortrait()?"9:16":"16:9";
+  var p=r.split(":").map(Number);
+  return p[1]?p[0]/p[1]:16/9
+}
+/* 录像时锁定启动瞬间的比例，避免中途旋转导致画布尺寸跳变 */
+function curRatio(){return (CM.rec&&CM.A)||ratioVal(CM.ratio)}
+function ratioLabel(){
+  if(CM.ratio!=="auto")return CM.ratio;
+  return isPortrait()?"自动 · 竖屏 9:16":"自动 · 横屏 16:9"
+}
+function crop(){var v=$("cv"),sw=v.videoWidth||1280,sh=v.videoHeight||720,A=curRatio(),cw=sw,ch=sh;if(sw/sh>A)cw=Math.round(sh*A);else ch=Math.round(sw/A);return{sx:(sw-cw)/2,sy:(sh-ch)/2,cw:cw,ch:ch}}
+function frame(c,withL,max){var v=$("cv"),r=crop(),k=max?Math.min(1,max/Math.max(r.cw,r.ch)):1,W=Math.max(2,Math.round(r.cw*k/2)*2),H=Math.max(2,Math.round(r.ch*k/2)*2);
+if(c.width!==W||c.height!==H){c.width=W;c.height=H}var g=c.getContext("2d");g.save();if(CM.mir){g.translate(W,0);g.scale(-1,1)}g.drawImage(v,r.sx,r.sy,r.cw,r.ch,0,0,W,H);g.restore();if(withL)drawLyr(g,W,H)}
+
+/* 打开摄像头 / 补音频轨
+   - 已有可用视频流且不需要音频 → 直接复用，避免重复授权
+   - 已有视频流但缺音频 → 只单独请求音频并挂到现有流，绝不重新请求摄像头
+   - 完全没有流 → 走设备探测流程 */
+async function openCam(withAudio,targetFace){
+  var wantAudio=!!withAudio;
+  if(CM.stream&&(!wantAudio||CM.stream.getAudioTracks().length))return CM.stream;
+  if(CM.camReq)return CM.camReq;
+  if(CM.stream&&CM.stream.getVideoTracks().length&&wantAudio){
+    try{
+      var as=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+      var at=as.getAudioTracks()[0];
+      if(at){at.enabled=true;CM.stream.addTrack(at)}
+      return CM.stream
+    }catch(e){return CM.stream}
+  }
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){CM.fb=true;toast("摄像头不可用（"+eh({name:"TypeError"})+"），已改用系统相机拍摄");return null}
+  var face=targetFace||CM.face||"environment",size=mediaSize(),audioTrack=null,old=CM.stream;
+  if(old&&old.getAudioTracks().length)audioTrack=old.getAudioTracks()[0];
+  CM.camReq=(async function(){
+    var tries=[],devConstraint=CM.dev?{width:{ideal:size.width},height:{ideal:size.height},deviceId:{exact:CM.dev}}:null;
+    if(devConstraint)tries.push({video:devConstraint,audio:false});
+    tries.push({video:{width:{ideal:size.width},height:{ideal:size.height},facingMode:{exact:face}},audio:false},{video:{width:{ideal:size.width},height:{ideal:size.height},facingMode:{ideal:face}},audio:false});
+    var devices=[];try{devices=(await navigator.mediaDevices.enumerateDevices()).filter(function(d){return d.kind==="videoinput"})}catch(e){}
+    var s=null,e0=null;
+    for(var i=0;i<tries.length&&!s;i++){try{s=await navigator.mediaDevices.getUserMedia(tries[i])}catch(e){e0=e}}
+    if(!s&&devices.length){for(var j=0;j<devices.length&&!s;j++){if(CM.dev&&devices[j].deviceId!==CM.dev)continue;try{s=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:size.width},height:{ideal:size.height},deviceId:{exact:devices[j].deviceId}},audio:false})}catch(e){e0=e}}}
+    if(!s){CM.le=e0;if(audioTrack&&wantAudio){toast("摄像头切换失败，保留当前画面");return old}CM.fb=true;toast("摄像头不可用（"+eh(CM.le)+"），已改用系统相机拍摄");return null}
+    var vt=s.getVideoTracks()[0],se=vt.getSettings();CM.face=se.facingMode||face;CM.dev=se.deviceId||CM.dev;CM.fb=false;CM.mir=CM.face==="user";
+    if(audioTrack){s=new MediaStream([vt,audioTrack]);if(old&&old!==s)old.getVideoTracks().forEach(function(t){t.stop()})}else if(old&&old!==s){old.getTracks().forEach(function(t){t.stop()})}
+    CM.stream=s;var v=$("cv");applyRatioUI();v.srcObject=s;v.play().catch(function(){});return s})();
+  CM.camReq.then(function(){CM.camReq=null},function(){CM.camReq=null});return CM.camReq}
+async function flipCam(){if(CM.rec||!CM.stream)return;var tr=CM.stream.getVideoTracks()[0],se=tr.getSettings(),next=se.facingMode?(se.facingMode==="user"?"environment":"user"):null;
+if(next){try{await tr.applyConstraints({facingMode:{exact:next}});var ns0=tr.getSettings();if((!se.deviceId||!ns0.deviceId||ns0.deviceId!==se.deviceId)&&(!ns0.facingMode||ns0.facingMode===next)){CM.face=next;CM.dev=ns0.deviceId||null;CM.mir=next==="user";applyRatioUI();return}}catch(e){}}
+var devs=[];try{devs=(await navigator.mediaDevices.enumerateDevices()).filter(function(d){return d.kind==="videoinput"})}catch(e){}
+if(devs.length<2){toast("未检测到其他摄像头");return}
+var curId=se.deviceId||CM.dev,candidate=devs.find(function(d){return d.deviceId!==curId})||devs[0];
+CM.dev=candidate.deviceId;CM.face=CM.face==="user"?"environment":"user";var audioTrack=CM.stream.getAudioTracks()[0]||null,old=CM.stream;CM.stream=null;tr.stop();var s=await openCam(!!audioTrack,CM.face);
+if(s&&audioTrack&&!s.getAudioTracks().length){s=new MediaStream([s.getVideoTracks()[0],audioTrack]);CM.stream=s;$("cv").srcObject=s;if(CM.face==="user")CM.mir=true;applyRatioUI()}
+if(CM.stream&&!st.mic&&CM.stream.getAudioTracks().length)CM.stream.getAudioTracks()[0].enabled=false}
+async function camOn(){CM.on=true;CM.ico=CM.ico||$("camBtn").innerHTML;CM.ratio=P.ratio||"16:9";$("app").classList.add("cam");$("live").classList.add("cam");setPos(CM.pos);applyRatioUI();$("camBtn").innerHTML="✕";$("camBtn").classList.add("on");$("cc").style.display="block";$("la").style.display="none";draw();var needAudio=!st.stream&&(st.mic||CM.m==="video");await openCam(needAudio,CM.face);if(st.mic&&CM.stream&&CM.stream.getAudioTracks().length&&!st.stream)openMic();else if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false});if(!st.run)start()}
+function camOff(){if(CM.rec)return;closeMusicRec();CM.on=false;$("app").classList.remove("cam");$("live").classList.remove("cam","top","mid","bot");$("camBtn").innerHTML=CM.ico||"";$("camBtn").classList.remove("on");$("aa").classList.remove("on");$("cc").style.display="none";$("la").style.display="";closeCam();draw()}
+function toggleCam(){if(CM.rec){toast("请先停止录像");return}CM.on?camOff():camOn()}
+function togBurn(){CM.burn=!CM.burn;$("burn").classList.toggle("on",CM.burn)}
+function rtUI(on){vib(on?[20,30,20]:25);var b=$("rt");b.classList.toggle("snap",on);b.textContent=on?"":"⟲";b.setAttribute("aria-label",on?"录像中拍照":"切换摄像头")}
+function rightBtn(){CM.rec?snap():flipCam()}
+async function startRec(){if(!window.MediaRecorder){toast("此浏览器不支持录像");return}
+if(CM.rec){return}
+var at=st.stream?st.stream.getAudioTracks()[0]:null;
+if(!at&&CM.stream){at=CM.stream.getAudioTracks()[0]||null}
+if(!at&&CM.aud){at=CM.aud.getAudioTracks()[0]||null}
+if(!at&&CM.on){await openCam(true);if(CM.stream)at=CM.stream.getAudioTracks()[0]||null}
+if(!at){try{if(!CM.audReq)CM.audReq=navigator.mediaDevices.getUserMedia({audio:true});CM.aud=await CM.audReq;if(CM.aud)CM.audReq=null;at=CM.aud&&CM.aud.getAudioTracks()[0]}catch(e){CM.audReq=null;toast("无法录音，将录制无声视频")}}
+if(at)at.enabled=true;
+CM.A=ratioVal(CM.ratio);CM.cvs=document.createElement("canvas");frame(CM.cvs,CM.burn,P.q);var vt=CM.cvs.captureStream(30).getVideoTracks();
+var mt=["video/mp4","video/webm;codecs=vp9,opus","video/webm"].filter(function(t){return MediaRecorder.isTypeSupported(t)})[0];
+CM.chunks=[];CM.mk=[];CM.t0=Date.now();CM.pos0=st.t;CM.song0=S[st.i].n;
+CM.rec=new MediaRecorder(new MediaStream(vt.concat(at?[at]:[])),mt?{mimeType:mt}:{});
+CM.rec.ondataavailable=function(e){if(e.data.size)CM.chunks.push(e.data)};CM.rec.onstop=finishRec;CM.rec.start(1000);
+CM.fi=setInterval(function(){frame(CM.cvs,CM.burn,MS())},33);
+$("shut").classList.add("rec");$("rtm").style.display="flex";rtUI(true);CM.tm=setInterval(function(){$("ct").textContent=fmt((Date.now()-CM.t0)/1000)},500)}
+function stopRec(){if(!CM.rec)return;clearInterval(CM.tm);clearInterval(CM.fi);$("shut").classList.remove("rec");$("rtm").style.display="none";rtUI(false);CM.rec.stop()}
+/* ===== 个性化 / 权限诊断 / 兜底 ===== */
+/* 真实识别默认开启（mic:true） */
+var P={theme:"dark",accent:"auto",bg:"black",font:"sys",fs:34,fw:700,lh:1.35,al:"left",cur:"#ffffff",nxc:"#8e8e93",prev:true,nx:2,shadow:true,dim:true,dimLv:.82,wake:true,haptic:true,cam:"environment",q:1080,ratio:"auto",pos:"bot",op:.85,burn:false,mic:true,dbg:false};
+var DEF=JSON.parse(JSON.stringify(P)),IT={},WL=null,FD=null,SET_OPEN={"外观":true,"歌词样式":false,"现场与相机":false,"识别与调试":false,"权限与环境":false,"数据":false,"关于":false};try{var so=JSON.parse(localStorage.getItem("lsync.set.open")||"{}");for(var sk in SET_OPEN)if(typeof so[sk]==="boolean")SET_OPEN[sk]=so[sk]}catch(e){}
+/* 读取个性化配置；配置版本升级时强制把真实识别打开（保证“默认开启”生效） */
+var CONFVER="1.6.0";
+try{
+  var sv=JSON.parse(localStorage.getItem("lsync.p")||"{}");
+  for(var k0 in sv)if(k0 in DEF&&typeof sv[k0]===typeof DEF[k0])P[k0]=sv[k0];
+  var _cv=localStorage.getItem("lsync.ver")||"";
+  if(_cv!==CONFVER){P.mic=true;localStorage.setItem("lsync.ver",CONFVER);save()}
+}catch(e){}
+function save(){try{localStorage.setItem("lsync.p",JSON.stringify(P))}catch(e){}}
+var FONTS={sys:'-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif',round:'ui-rounded,"SF Pro Rounded","PingFang SC",sans-serif',serif:'"Songti SC","Noto Serif SC",Georgia,serif',kai:'"Kaiti SC",STKaiti,KaiTi,serif',mono:'ui-monospace,Menlo,monospace'};
+var BGS={black:"#050706",navy:"#08172a",plum:"#26102b",forest:"#092218",ash:"#1d2020",white:"#eef6f0"};
+var PRE=[["暗场演出",{theme:"dark",bg:"black",cur:"#ffffff",nxc:"#8e8e93",fs:34,fw:700,font:"sys",dim:true,dimLv:.7}],["荧光应援",{theme:"dark",bg:"plum",cur:"#fffb7a",nxc:"#ff8ad8",fs:38,fw:800,font:"round",dim:false}],["白天户外",{theme:"light",bg:"white",cur:"#000000",nxc:"#3c3c43",fs:36,fw:800,font:"sys",dim:false}]];
+/* dev:true 的项仅在开发模式显示（识别与调试整组隐藏，开发模式下含调试面板入口） */
+var SC=[{g:"快速方案",x:"pre"},
+{g:"外观",i:[{k:"theme",t:"seg",l:"界面外观",o:[["auto","自动"],["light","浅色"],["dark","深色"]]},{k:"accent",t:"sw8",l:"强调色",o:["auto","#ff375f","#ff9f0a","#30d158","#64d2ff","#bf5af2"]}]},
+{g:"歌词样式",i:[{k:"bg",t:"sel",l:"现场背景",o:[["black","纯黑"],["navy","深蓝"],["plum","深紫"],["forest","墨绿"],["ash","深灰"],["white","白天（浅色）"]]},{k:"font",t:"sel",l:"字体",o:[["sys","系统"],["round","圆体"],["serif","宋体"],["kai","楷体"],["mono","等宽"]]},{k:"fs",t:"rng",l:"字号",min:22,max:48,step:1},{k:"fw",t:"seg",l:"字重",o:[[500,"常规"],[600,"中等"],[700,"粗"],[800,"特粗"]]},{k:"lh",t:"rng",l:"行距",min:1.1,max:1.8,step:.05},{k:"al",t:"seg",l:"对齐",o:[["left","左"],["center","中"],["right","右"]]},{k:"cur",t:"col",l:"当前句颜色"},{k:"nxc",t:"col",l:"下一句颜色"},{k:"nx",t:"seg",l:"向后预览句数",o:[[1,"1"],[2,"2"],[3,"3"]]},{k:"prev",t:"sw",l:"显示上一句"},{k:"shadow",t:"sw",l:"文字阴影",s:"叠加相机画面时更清晰"},{k:"dim",t:"sw",l:"低亮度模式",s:"降低歌词亮度，减少干扰他人"},{k:"dimLv",t:"rng",l:"低亮度强度",min:.4,max:1,step:.05}]},
+{g:"现场与相机",i:[{k:"wake",t:"sw",l:"保持屏幕常亮",s:"识别运行时防止自动锁屏"},{k:"haptic",t:"sw",l:"震动反馈",s:"锁定 / 丢失 / 拍摄时（部分设备不支持）"},{k:"cam",t:"seg",l:"默认镜头",o:[["environment","后置"],["user","前置"]]},{k:"q",t:"seg",l:"拍摄画质",o:[[720,"720p"],[1080,"1080p"]]},{k:"ratio",t:"seg",l:"拍摄比例",w5:true,o:[["auto","自动"],["16:9","16:9"],["4:3","4:3"],["1:1","1:1"],["9:16","9:16"]]},{k:"pos",t:"seg",l:"默认歌词位置",o:[["top","上"],["mid","中"],["bot","下"]]},{k:"op",t:"rng",l:"默认歌词透明度",min:.3,max:1,step:.05},{k:"burn",t:"sw",l:"默认字幕版",s:"歌词写入照片和视频"}]},
+{g:"识别与调试",dev:true,i:[{k:"mic",t:"sw",l:"真实识别（麦克风）",s:"关闭时为模拟识别（默认开启）"},{k:"dbg",t:"sw",l:"调试面板",s:"现场页显示置信度、阈值、输入设备、音频测试"}]},
+{g:"权限与环境",x:"dg",dev:true},{g:"数据",x:"data"},{g:"关于",x:"about"}];
+var DGH='<div class="group"><div class="row" onclick="diag()"><div class="t" style="color:var(--blue)">运行环境诊断</div></div><div class="row" onclick="testMedia(\'audio\')"><div class="t" style="color:var(--blue)">测试麦克风授权</div></div><div class="row" onclick="testMedia(\'video\')"><div class="t" style="color:var(--blue)">测试摄像头授权</div></div></div><p class="note" id="dg">授权弹窗弹不出来时，先运行诊断。</p>';
+var DTH='<div class="group"><div class="row" onclick="exportP()"><div class="t" style="color:var(--blue)">导出个性化配置</div></div><label class="row"><div class="t" style="color:var(--blue)">导入个性化配置</div><input type="file" accept=".json" hidden onchange="impP(this)"></label><div class="row" onclick="resetP()"><div class="t" style="color:var(--red)">恢复默认设置</div></div></div><button class="btn g" id="clr" onclick="clearAll()" style="display:none;color:var(--red)">删除全部已导入歌曲</button><p class="note">个性化设置自动保存在本机浏览器；导入的歌曲与相册刷新后不保留。</p>';
+var ABOUT='<div class="about-card"><div class="about-mark">LIVE<br>SYNC</div><div class="about-copy"><b>现场同频</b><span>版本 v2.4.0</span><span>开发者 · Cheung &amp; Neom</span></div></div><div class="about-meta"><span>现场歌词 · 音乐识别 · 实时拍摄</span><span>本地优先 · 隐私友好</span></div>';
+function ctl(it){var k=it.k,v=P[k];
+if(it.t==="sw")return'<div class="sw'+(v?" on":"")+'" onclick="setP(\''+k+'\',!P.'+k+')"></div>';
+if(it.t==="seg")return'<div class="seg2'+(it.w5?" w5":"")+'">'+it.o.map(function(o,i){return'<button class="'+(String(o[0])===String(v)?"on":"")+'" onclick="setP(\''+k+'\',IT.'+k+'.o['+i+'][0])">'+o[1]+'</button>'}).join("")+'</div>';
+if(it.t==="sel")return'<select onchange="setP(\''+k+'\',this.value)">'+it.o.map(function(o){return'<option value="'+o[0]+'"'+(o[0]===v?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select>';
+if(it.t==="rng")return'<input type="range" min="'+it.min+'" max="'+it.max+'" step="'+it.step+'" value="'+v+'" oninput="setP(\''+k+'\',+this.value,1)"><span class="rv" id="rv-'+k+'">'+v+'</span>';
+if(it.t==="col")return'<input type="color" value="'+v+'" oninput="setP(\''+k+'\',this.value,1)">';
+return'<div class="sws">'+it.o.map(function(c){return'<button class="'+(c===v?"on":"")+'" style="background:'+(c==="auto"?"conic-gradient(#ff375f,#ff9f0a,#30d158,#64d2ff,#bf5af2,#ff375f)":c)+'" onclick="setP(\''+k+'\',\''+c+'\')" aria-label="'+c+'"></button>'}).join("")+'</div>'}
+function setSummary(g){if(g.g==="外观")return (P.theme==="auto"?"自动外观":P.theme==="light"?"浅色":"深色")+" · 强调色";if(g.g==="歌词样式"){var bg={black:"纯黑",navy:"深蓝",plum:"深紫",forest:"墨绿",ash:"深灰",white:"白天"}[P.bg]||"纯黑";var fn={sys:"系统字体",round:"圆体",serif:"宋体",kai:"楷体",mono:"等宽"}[P.font]||"系统字体";return bg+" · "+fn+" · "+P.fs+"pt"}if(g.g==="现场与相机")return (P.cam==="user"?"前置":"后置")+" · "+P.q+"p · "+(P.ratio==="auto"?(isPortrait()?"自动（竖 9:16）":"自动（横 16:9）"):P.ratio)+" · 歌词"+(P.pos==="top"?"上":P.pos==="mid"?"中":"下");if(g.g==="识别与调试")return (P.mic?"真实识别已开启":"模拟识别")+" · 调试面板"+(P.dbg?"开":"关");if(g.g==="权限与环境")return "HTTPS、页面策略与设备授权";if(g.g==="数据")return "导入、导出、恢复默认";if(g.g==="关于")return "v2.4.0 · Cheung & Neom"} 
+function toggleSet(g){SET_OPEN[g]=!SET_OPEN[g];try{localStorage.setItem("lsync.set.open",JSON.stringify(SET_OPEN))}catch(e){}renderSet()}
+function renderSet(){var h="";SC.forEach(function(g){
+  if(!DEV&&g.dev)return;
+  if(g.x==="pre"){h+='<div class="lbl">'+g.g+'</div><div class="group"><div class="row pre" style="cursor:default">'+PRE.map(function(p,i){return'<button class="chip" onclick="applyPreset('+i+')">'+p[0]+'</button>'}).join("")+'</div></div>';return}
+  var items=g.i?(DEV?g.i:g.i.filter(function(it){return !it.dev})):null;
+  if(items&&!items.length)return;
+  var open=SET_OPEN[g.g]!==false;
+  h+='<section class="setsec '+(open?"open":"closed")+'"><button class="sethead" onclick="toggleSet(\''+g.g+'\')"><div class="t"><b>'+g.g+'</b><span class="setsummary">'+setSummary(g)+'</span></div><span class="setchev">›</span></button><div class="setbody" '+(open?"":"style=\"display:none\"")+'>';
+  if(g.x==="dg"){h+=DGH}else if(g.x==="data"){h+=DTH}else if(g.x==="about"){h+=ABOUT}else{h+='<div class="group">'+items.map(function(it){IT[it.k]=it;return'<div class="row" style="cursor:default"><div class="t"><b>'+it.l+'</b>'+(it.s?'<span>'+it.s+'</span>':"")+'</div>'+ctl(it)+'</div>'}).join("")+'</div>'}
+  h+='</div></section>'});
+$("setc").innerHTML=h}
+function rerender(){var y=$("p-set").scrollTop,d=$("dg")?$("dg").innerHTML:"";renderSet();$("p-set").scrollTop=y;if(d&&$("dg"))$("dg").innerHTML=d;renderSongs()}
+function applyStyle(){var r=document.documentElement,l=$("live"),w=P.bg==="white";
+if(P.theme==="auto")r.removeAttribute("data-theme");else r.setAttribute("data-theme",P.theme);
+if(P.accent==="auto")r.style.removeProperty("--blue");else r.style.setProperty("--blue",P.accent);if(window.refreshChromaTheme)refreshChromaTheme();if(window.syncNavSpace)setTimeout(syncNavSpace,0);
+var m={lbg:BGS[P.bg],ltx:w?"#111":"#fff",lfont:FONTS[P.font],lw:P.fw,llh:P.lh,lal:P.al,lcur:P.cur,lnx:P.nxc};for(var k in m)r.style.setProperty("--"+k,m[k]);
+l.classList.toggle("lt",w);l.classList.toggle("sh",P.shadow);st.dim=P.dim}
+function onP(k){applyStyle();if(k==="dbg"){st.dbg=P.dbg&&DEV;dbgUpd()}if(k==="mic"){st.mic=P.mic;if(P.mic&&st.run)openMic();else closeMic()}
+if(k==="cam"){CM.face=P.cam;CM.dev=null}if(k==="ratio"){CM.ratio=P.ratio;applyRatioUI()}if(k==="pos"){CM.pos=P.pos;if(CM.on)setPos(P.pos)}if(k==="op")CM.op=P.op;if(k==="burn"){CM.burn=P.burn;$("burn").classList.toggle("on",P.burn)}if(k==="wake")wake();draw()}
+function setP(k,v,live){P[k]=v;if(k==="bg"){var w=v==="white";if(w&&P.cur==="#ffffff"){P.cur="#000000";P.nxc="#3c3c43"}else if(!w&&P.cur==="#000000"){P.cur="#ffffff";P.nxc="#8e8e93"}}
+save();onP(k);if(live){var e=$("rv-"+k);if(e)e.textContent=v}else rerender()}
+function applyPreset(i){Object.assign(P,PRE[i][1]);save();for(var k in P)onP(k);rerender();toast("已应用「"+PRE[i][0]+"」")}
+function resetP(){for(var k in DEF)P[k]=DEF[k];save();for(var k2 in P)onP(k2);rerender();toast("已恢复默认设置")}
+async function exportP(){try{var d=window.claude&&await claude.use("downloads");if(!d){toast("当前环境不支持保存文件");return}await d.save({filename:"现场同频-个性化.json",data:JSON.stringify(P,null,1)})}catch(e){if(!e||e.code!=="declined")toast("导出失败")}}
+async function impP(el){var f=el.files[0];el.value="";if(!f)return;try{var o=JSON.parse(await f.text()),n=0;for(var k in o)if(k in DEF&&typeof o[k]===typeof DEF[k]){P[k]=o[k];n++}save();for(var k2 in P)onP(k2);rerender();toast("已导入 "+n+" 项设置")}catch(e){toast("配置文件无法读取")}}
+function vib(n){if(P.haptic&&navigator.vibrate){try{navigator.vibrate(n)}catch(e){}}}
+function mediaSize(){var a=curRatio(),m=P.q,w=a>=1?Math.round(m*a):m,h=a>=1?m:Math.round(m/a);return{width:Math.max(2,w),height:Math.max(2,h)}}
+function MS(){return mediaSize().width}
+function applyRatioUI(){var a=ratioVal(CM.ratio);document.documentElement.style.setProperty("--cam-ratio",a);var v=$("cv");if(v){v.style.aspectRatio=a;v.style.transform=CM.mir?"translate(-50%,-50%) scaleX(-1)":"translate(-50%,-50%)"}}
+async function wake(){try{if(P.wake&&st.run&&navigator.wakeLock&&!WL){WL=await navigator.wakeLock.request("screen");WL.addEventListener("release",function(){WL=null})}else if((!P.wake||!st.run)&&WL){await WL.release();WL=null}}catch(e){}}
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")wake()});
+/* 方向变化：自动比例跟随屏幕方向；录像中锁定比例并提示 */
+function onOrient(){
+  if(P.ratio==="auto"){CM.ratio="auto";applyRatioUI()}
+  if(CM.rec){clearTimeout(CM._rt);CM._rt=setTimeout(function(){toast("录像中画面比例已锁定，请保持手机方向")},300)}
+  else draw()
+}
+window.addEventListener("resize",onOrient);
+window.addEventListener("orientationchange",function(){setTimeout(onOrient,300)});
+function eh(e){var n=e&&e.name||"";return({NotAllowedError:"被拒绝，或被页面策略禁止（见 设置 > 权限与环境）",NotFoundError:"未找到设备",NotReadableError:"设备被其他应用占用",SecurityError:"安全限制",OverconstrainedError:"设备不满足要求",AbortError:"已中断",TypeError:"浏览器不支持或页面不在安全上下文"})[n]||n||"未知错误"}
+async function diag(){var o=[],ifr=window.top!==window,pp=document.permissionsPolicy||document.featurePolicy;
+o.push("安全上下文（HTTPS）："+(window.isSecureContext?"是":"否"));o.push("嵌入在框架中："+(ifr?"是":"否"));
+[["microphone","麦克风"],["camera","摄像头"]].forEach(function(f){var a=pp&&pp.allowsFeature?pp.allowsFeature(f[0]):null;o.push(f[1]+"页面策略："+(a===null?"无法判断":a?"允许":"被禁止"))});
+for(var n of [["microphone","麦克风"],["camera","摄像头"]]){try{var r=await navigator.permissions.query({name:n[0]});o.push(n[1]+"授权状态："+r.state)}catch(e){o.push(n[1]+"授权状态：无法查询")}}
+o.push("getUserMedia："+(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia?"可用":"不可用"));
+var blocked=pp&&pp.allowsFeature&&(!pp.allowsFeature("microphone")||!pp.allowsFeature("camera"));
+$("dg").innerHTML=o.join("<br>")+(blocked||ifr?'<br><br>页面运行在受限框架里时，浏览器不会弹出授权窗口，这不是你的设置问题。可行办法：把页面部署到独立的 HTTPS 地址后在 Edge 中打开；本页仍可使用「系统相机」拍摄，以及调试面板里的「音频文件代替麦克风」。':"")}
+async function testMedia(kind){var el=$("dg"),has=kind==="audio"?((st.stream&&st.stream.getAudioTracks().length)||(CM.stream&&CM.stream.getAudioTracks().length)||(CM.aud&&CM.aud.getAudioTracks().length)):!!(CM.stream&&CM.stream.getVideoTracks().length);if(has){el.textContent=(kind==="audio"?"麦克风":"摄像头")+"已在本页获得授权，可直接使用，无需再次请求。";return}el.textContent="正在请求"+(kind==="audio"?"麦克风":"摄像头")+"权限…";
+try{var s=await navigator.mediaDevices.getUserMedia(kind==="audio"?{audio:true}:{video:true});s.getTracks().forEach(function(t){t.stop()});el.textContent=(kind==="audio"?"麦克风":"摄像头")+"授权成功，可正常使用。"}
+catch(e){el.textContent=(kind==="audio"?"麦克风":"摄像头")+"请求失败："+(e&&e.name||"未知")+"（"+eh(e)+"）。若 Edge 已拒绝过，请在 设置 > 网站权限 中改为允许后刷新。"}}
+function sysCap(){var f=$("fcap");f.accept=CM.m==="photo"?"image/*":"video/*";f.setAttribute("capture",CM.face==="user"?"user":"environment");f.value="";f.click()}
+$("fcap").onchange=function(e){var f=e.target.files[0];if(!f)return;var t=f.type.indexOf("video")===0?"video":"photo";addItem(t,f,{});var it=CM.items[0];
+if(t==="video"){var v=document.createElement("video");v.preload="metadata";v.onloadedmetadata=function(){it.dur=v.duration;renderGal()};v.src=it.url}};
+async function feedFile(f){if(!f)return;if(!S.some(function(s){return s.real})){toast("请先导入对应的歌曲");return}
+try{var ab=await f.arrayBuffer(),C=window.OfflineAudioContext||window.webkitOfflineAudioContext,b=await new Promise(function(r,j){new C(1,1,SR).decodeAudioData(ab,r,j)}),x=ds(b.getChannelData(0),b.sampleRate),pos=0;
+closeMic();P.mic=true;st.mic=true;save();rerender();st.stream={fake:1,getTracks:function(){return[]},getAudioTracks:function(){return[]}};rfill=0;
+FD=setInterval(function(){for(var k=0;k<800;k++){RING[rp]=x[pos%x.length];rp=(rp+1)%RING.length;rfill++;pos++}st.lvl=.5},100);if(!st.run)start();toast("正在用音频文件模拟麦克风输入")}catch(e){toast("无法解码该音频文件")}}
+
+/* ===== 开发模式入口：设置页连点标题 5 次 =====
+   开启后「识别与调试」分组出现，调试面板开关就在其中，
+   打开开关即恢复调试面板入口。 */
+var _tap=0,_tapT=null;
+(function(){
+  var el=$("setTitle");if(!el)return;
+  el.addEventListener("click",function(){
+    _tap++;clearTimeout(_tapT);_tapT=setTimeout(function(){_tap=0},900);
+    if(_tap>=5){
+      _tap=0;DEV=!DEV;
+      try{localStorage.setItem("lsync.dev",DEV?"1":"0")}catch(e){}
+      applyDevFlag();dbgUpd();renderSet();
+      toast(DEV?"开发模式已开启：设置中已显示「识别与调试」":"开发模式已关闭");
+    }else if(_tap===3){
+      toast("再连点 2 次可"+(DEV?"关闭":"开启")+"开发模式");
+    }
+  });
+})();
+
+
+/* ===== v2.3 behavior patch ===== */
+var OPAL_SCENES={
+  black:{base:'#050706',tone:'#c9ffb1',tone2:'#79e7dc'},
+  navy:{base:'#08172a',tone:'#9ee7ff',tone2:'#9cb8ff'},
+  plum:{base:'#26102b',tone:'#ffb2ee',tone2:'#b8c7ff'},
+  forest:{base:'#092218',tone:'#a8f0cb',tone2:'#79e1c9'},
+  ash:{base:'#1d2020',tone:'#d4e8d7',tone2:'#a9d5c6'},
+  white:{base:'#eef6f0',tone:'#2f7d50',tone2:'#5eab7c'}
+};
+var OPAL_PRESETS=[
+  ["暗场演出",{theme:"dark",accent:"#c9ffb1",bg:"black",cur:"#f7fff9",nxc:"rgba(220,237,224,.44)",fs:34,fw:700,font:"sys",dim:true,dimLv:.72,shadow:true,fade:true,al:"center"}],
+  ["荧光应援",{theme:"dark",accent:"#ff8ad8",bg:"plum",cur:"#fff49b",nxc:"#ff9adf",fs:38,fw:800,font:"round",dim:false,shadow:true,fade:true,al:"center"}],
+  ["白天户外",{theme:"light",accent:"#2f7d50",bg:"white",cur:"#163b25",nxc:"#4d795d",fs:36,fw:800,font:"sys",dim:false,shadow:false,fade:true,al:"center"}]
+];
+/* Keep PRE as the public source used by Settings. */
+PRE=OPAL_PRESETS;
+
+function _hexOr(color,fallback){try{return (window.chroma&&chroma.valid(color))?chroma(color).hex():fallback}catch(e){return fallback}}
+function _rgba(color,a){try{return chroma(color).alpha(a).css()}catch(e){return color}}
+function _sceneBase(){return OPAL_SCENES[P.bg]||OPAL_SCENES.black}
+function _sceneIsLight(){return P.theme==="light" || (P.theme==="auto" && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) || P.bg==="white"}
+function refreshChromaTheme(){
+  var r=document.documentElement, sc=_sceneBase(), base=sc.base;
+  var cur=_hexOr(P.cur,_sceneIsLight()?"#183022":"#f7fff9");
+  var nx=_hexOr(P.nxc,_sceneIsLight()?"#50725d":"#9fb0a6");
+  var tone=_hexOr(P.accent!=="auto"?P.accent:sc.tone,sc.tone);
+  var tone2=_hexOr(sc.tone2,sc.tone2);
+  try{
+    var b=chroma(base), c=chroma(cur), a=chroma(tone), a2=chroma(tone2);
+    var glow1=chroma.mix(b,a,_sceneIsLight()?.16:.20,'lch');
+    var glow2=chroma.mix(b,a2,_sceneIsLight()?.11:.15,'lch');
+    var ring=chroma.mix(a,a2,.5,'lch');
+    var lyricGlow=_sceneIsLight()
+      ? 'radial-gradient(circle, '+_rgba(glow1,.19)+' 0, '+_rgba(glow2,.09)+' 22%, transparent 66%)'
+      : 'radial-gradient(circle, '+_rgba(glow1,.22)+' 0, '+_rgba(glow2,.11)+' 24%, transparent 68%)';
+    var stageBg=_sceneIsLight()
+      ? 'radial-gradient(circle at 50% 22%, '+_rgba(glow1,.16)+', transparent 27%), radial-gradient(circle at 88% 80%, '+_rgba(glow2,.10)+', transparent 24%), '+b.hex()
+      : 'radial-gradient(circle at 50% 23%, '+_rgba(glow1,.13)+', transparent 26%), radial-gradient(circle at 16% 78%, '+_rgba(glow2,.08)+', transparent 23%), '+b.hex();
+    r.style.setProperty('--scene-bg',stageBg);
+    r.style.setProperty('--scene-glow-1',lyricGlow);
+    r.style.setProperty('--scene-ring',_rgba(ring,_sceneIsLight()?.16:.20));
+    r.style.setProperty('--scene-ring-shadow','0 0 80px '+_rgba(ring,_sceneIsLight()?.08:.12)+', inset 0 0 60px '+_rgba(a,_sceneIsLight()?.05:.07));
+    r.style.setProperty('--scene-lyric-glow',lyricGlow);
+    r.style.setProperty('--scene-lyric-ring','conic-gradient(from 210deg,transparent 0 38%, '+_rgba(a,.48)+' 55%, '+_rgba(a2,.28)+' 77%, transparent 92%)');
+    r.style.setProperty('--scene-cur',cur);
+    r.style.setProperty('--scene-nx',nx);
+    r.style.setProperty('--scene-pv',_sceneIsLight()?_rgba(nx,.28):_rgba(nx,.18));
+    r.style.setProperty('--scene-accent',a.hex());
+    r.style.setProperty('--scene-accent2',a2.hex());
+  }catch(e){
+    r.style.setProperty('--scene-bg',base);
+    r.style.setProperty('--scene-cur',cur);
+    r.style.setProperty('--scene-nx',nx);
+  }
+  r.style.setProperty('--scene-font',FONTS[P.font]||FONTS.sys);
+  r.style.setProperty('--scene-fw',String(P.fw||700));
+  r.style.setProperty('--scene-lh',String(P.lh||1.35));
+  r.style.setProperty('--scene-align',P.al==='right'?'right':P.al==='center'?'center':'left');
+  r.style.setProperty('--scene-shadow',P.shadow?(_sceneIsLight()?'0 8px 26px rgba(57,102,75,.10)':'0 0 24px rgba(190,255,210,.14),0 8px 28px rgba(0,0,0,.52)'):'none');
+}
+
+function syncNavSpace(){
+  var root=document.documentElement, app=document.getElementById('app'), nav=document.querySelector('.tabbar');
+  if(!app||!nav){return}
+  if(app.classList.contains('cam') || getComputedStyle(nav).display==='none'){
+    root.style.setProperty('--nav-space','0px');return;
+  }
+  var ar=app.getBoundingClientRect(), nr=nav.getBoundingClientRect();
+  var footprint=Math.ceil(Math.max(0,ar.bottom-nr.top)+12);
+  root.style.setProperty('--nav-space',Math.max(88,footprint)+'px');
+}
+
+function uiAnimate(targets,props,duration,easing){
+  try{
+    if(window.anime && typeof window.anime==='function') return window.anime({targets:targets,duration:duration||360,easing:easing||'easeOutCubic',...props});
+  }catch(e){}
+  if(targets && targets.animate){
+    var frames=[]; if(props.opacity)frames.push({opacity:props.opacity});
+  }
+}
+var LAST_LYRIC="";
+function animateNav(tab){
+  if(!tab)return;
+  try{if(window.anime)anime({targets:tab,scale:[.96,1],duration:360,easing:'easeOutElastic(1,.75)'});}
+  catch(e){}
+}
+function animatePage(el){
+  if(!el)return;
+  try{if(window.anime)anime({targets:el,opacity:[.92,1],translateY:[5,0],duration:320,easing:'easeOutCubic'});}
+  catch(e){}
+}
+function animateLyricState(){
+  var cur=document.querySelector('#lyr .ln.cur');
+  if(!cur)return;
+  var txt=cur.textContent||'';
+  if(txt!==LAST_LYRIC){
+    LAST_LYRIC=txt;
+    try{
+      if(window.anime){
+        anime.remove('#lyr .ln');
+        anime({targets:cur,opacity:[.18,1],translateY:[8,0],scale:[.985,1],duration:500,easing:'easeOutCubic'});
+        var nx=document.querySelector('#lyr .ln.nx');
+        if(nx)anime({targets:nx,opacity:[.12,.72],translateY:[5,0],duration:420,easing:'easeOutCubic'});
+      }
+    }catch(e){}
+  }
+}
+
+/* Override the visual part of draw(): functional state remains identical. */
+var _drawCore=draw;
+draw=function(){
+  _drawCore();
+  refreshChromaTheme();
+  animateLyricState();
+};
+
+/* Settings changes should propagate immediately to the stage, including all text styles. */
+var _applyStyleCore=applyStyle;
+applyStyle=function(){
+  _applyStyleCore();
+  refreshChromaTheme();
+  syncNavSpace();
+};
+
+/* Presets are now self-contained, so switching them cannot inherit stale scene colors. */
+applyPreset=function(i){
+  var cfg=(PRE[i]&&PRE[i][1])||{};
+  Object.assign(P,cfg);
+  if(P.bg==='white'){P.theme='light';}
+  save();
+  for(var k in P)onP(k);
+  refreshChromaTheme();
+  rerender();
+  syncNavSpace();
+  var msg=(PRE[i]&&PRE[i][0])||'方案';
+  try{if(window.anime){anime({targets:'#p-set .chip',translateY:[2,0],opacity:[.78,1],delay:anime.stagger(35),duration:280,easing:'easeOutCubic'});}}catch(e){}
+  toast('已应用「'+msg+'」');
+};
+
+/* go(): default screen is Live; tab transitions receive a small Opal-like entrance. */
+var _goCore=go;
+go=function(t){
+  _goCore(t);
+  var p=document.getElementById(PG[t]);
+  animatePage(p);
+  var b=document.querySelector('.tab[data-t="'+t+'"]');
+  animateNav(b);
+  setTimeout(syncNavSpace,0);
+};
+
+/* Ensure camera mode always releases the floating navigation footprint. */
+var _camOnCore=camOn;
+camOn=async function(){
+  await _camOnCore();
+  syncNavSpace();
+};
+var _camOffCore=camOff;
+camOff=function(){
+  _camOffCore();
+  setTimeout(syncNavSpace,0);
+};
+
+/* No hidden/legacy text should appear in the live status cluster. */
+(function sanitizeLiveStatus(){
+  var status=document.querySelector('#live .status');
+  if(status){status.setAttribute('aria-label','当前同频状态');}
+})();
+
+window.addEventListener('resize',function(){setTimeout(syncNavSpace,30);});
+window.addEventListener('orientationchange',function(){setTimeout(syncNavSpace,120);});
+if(window.ResizeObserver){
+  var _nav=document.querySelector('.tabbar');
+  if(_nav)new ResizeObserver(function(){syncNavSpace();}).observe(_nav);
+}
+
+st.mic=P.mic;CM.face=P.cam;CM.pos=P.pos;CM.op=P.op;CM.ratio=P.ratio||"auto";CM.burn=P.burn;
+applyDevFlag();st.dbg=P.dbg&&DEV;
+applyRatioUI();$("burn").classList.toggle("on",P.burn);applyStyle();renderSet();
+renderSongs();draw();setStatus("idle");
+/* Start from the Live interface without auto-starting recognition/camera. */
+go("live");
+refreshChromaTheme();syncNavSpace();
+setTimeout(function(){syncNavSpace();animatePage($("live"));},60);
+</script>
+</body>
+</html>
