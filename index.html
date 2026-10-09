@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>现场同频 · v2.9</title>
+<title>现场同频 · v2.7</title>
 <style>
 :root{--bg:#f2f2f7;--card:#fff;--tx:#000;--tx2:#8e8e93;--sep:rgba(60,60,67,.18);--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--bar:rgba(249,249,249,.85)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--tx:#fff;--tx2:#8e8e93;--sep:rgba(84,84,88,.6);--blue:#0a84ff;--bar:rgba(29,29,30,.85)}}
@@ -880,6 +880,12 @@ html.lockp,html.lockp body{overflow:hidden}
   :where(html.cland) #live.cam .shut{width:62px;height:62px}
   :where(html.cland) #live.cam .cb{width:42px;height:42px}
 
+/* 拍摄界面右上角：快捷字幕样式入口与面板 */
+#live:not(.cam) #aaBtn{display:none!important}
+#aaBtn{font:700 14px/1 -apple-system,system-ui,"PingFang SC",sans-serif;letter-spacing:-.02em}
+#aaBtn.bn::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:#7dffb4;box-shadow:0 0 0 2px rgba(10,14,12,.85)}
+#live.cam #aa{position:absolute;left:0;right:0;top:calc(68px + env(safe-area-inset-top,0px));margin:0 18px;z-index:40}
+html.cland #live.cam #aa{margin-right:112px;max-width:520px}
 /* 拍摄时歌词：长句自动换行，不超出取景框 */
 #live.cam .lyrics{min-width:0;overflow:hidden}
 #live.cam .lyrics .ln{max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
@@ -900,8 +906,8 @@ html.lockp,html.lockp body{overflow:hidden}
   <button class="btn" onclick="go('live');start()">进入现场模式</button>
  </section>
  <section class="page on" id="live"><video id="cv" playsinline muted autoplay></video><div class="flash" id="flash"></div>
-  <div class="lhead"><div class="live-brand"><span>LIVE SYNC</span><div class="status"><span class="dot" id="dot"></span><span id="st">待机</span></div></div><div class="live-head-right"><span id="rtm" style="display:none;align-items:center;gap:6px;font-size:14px"><span class="recd"></span><span id="ct">0:00</span></span><div class="meter" id="meter"></div><button class="camb mrecb" id="mrecBtn" onclick="openMusicRec()" aria-label="识别音乐"><span class="mrec-pulse"></span><svg class="mrec-wave" viewBox="0 0 24 24"><path d="M4 15v-3M8 18V8M12 20V4M16 18V8M20 15v-6"/></svg></button><button class="camb" id="camBtn" onclick="toggleCam()" aria-label="相机"><svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg></button></div></div>
-  <div id="aa"><div class="aal">歌词位置<div class="seg" id="seg"><button data-p="top" onclick="setPos('top')">上</button><button data-p="mid" onclick="setPos('mid')">中</button><button data-p="bot" class="on" onclick="setPos('bot')">下</button></div></div><div class="aal">透明度<input type="range" min="0.3" max="1" step="0.05" value="0.85" oninput="CM.op=+this.value;draw()"></div><div class="aal">字幕版（歌词写入成片）<div class="sw" id="burn" onclick="togBurn()"></div></div></div>
+  <div class="lhead"><div class="live-brand"><span>LIVE SYNC</span><div class="status"><span class="dot" id="dot"></span><span id="st">待机</span></div></div><div class="live-head-right"><span id="rtm" style="display:none;align-items:center;gap:6px;font-size:14px"><span class="recd"></span><span id="ct">0:00</span></span><div class="meter" id="meter"></div><button class="camb mrecb" id="mrecBtn" onclick="openMusicRec()" aria-label="识别音乐"><span class="mrec-pulse"></span><svg class="mrec-wave" viewBox="0 0 24 24"><path d="M4 15v-3M8 18V8M12 20V4M16 18V8M20 15v-6"/></svg></button><button class="camb" id="aaBtn" onclick="toggleAA()" aria-label="字幕样式"><span>Aa</span></button><button class="camb" id="camBtn" onclick="toggleCam()" aria-label="相机"><svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg></button></div></div>
+  <div id="aa"><div class="aal">歌词位置<div class="seg" id="seg"><button data-p="top" onclick="setPos('top')">上</button><button data-p="mid" onclick="setPos('mid')">中</button><button data-p="bot" class="on" onclick="setPos('bot')">下</button></div></div><div class="aal">透明度<input type="range" min="0.3" max="1" step="0.05" value="0.85" oninput="CM.op=+this.value;draw()"></div><div class="aal">字号<input type="range" min="22" max="48" step="1" value="34" oninput="setP('fs',+this.value,1)"></div><div class="aal">字幕版（歌词写入成片）<div class="sw" id="burn" onclick="togBurn()"></div></div></div>
   <div class="song" id="sname"></div>
   <div class="lyrics" id="lyr"></div>
   <div class="prog"><i id="pg"></i></div>
@@ -1268,6 +1274,8 @@ function lyrBoxReset(){var e=$("lyr");if(!e)return;_LB.forEach(function(k){e.sty
 function fitLyr(){var e=$("lyr");if(!e||!CM.on)return;var ns=e.querySelectorAll(".ln");if(!ns.length)return;
   function over(){return e.scrollHeight>e.clientHeight+1}
   if(!over())return;
+  /* .ln 自带 transition:all .35s；每次重绘都是新元素，若不关掉，改字号会从原字号动画过渡，表现为字号快速闪动 */
+  for(var z=0;z<ns.length;z++)ns[z].style.transition="none";
   var pv=e.querySelectorAll(".ln.pv");for(var i=0;i<pv.length;i++)pv[i].style.display="none";
   if(!over())return;
   var base=[];for(var j=0;j<ns.length;j++)base.push(parseFloat(getComputedStyle(ns[j]).fontSize)||20);
@@ -1315,9 +1323,14 @@ CM.dev=candidate.deviceId;CM.face=CM.face==="user"?"environment":"user";var audi
 if(s&&audioTrack&&!s.getAudioTracks().length){s=new MediaStream([s.getVideoTracks()[0],audioTrack]);CM.stream=s;$("cv").srcObject=s;if(CM.face==="user")CM.mir=true;applyRatioUI()}
 if(CM.stream&&!st.mic&&CM.stream.getAudioTracks().length)CM.stream.getAudioTracks()[0].enabled=false}
 async function camOn(){CM.on=true;CM.ratio=P.ratio||"16:9";$("app").classList.add("cam");$("live").classList.add("cam");setPos(CM.pos);applyRatioUI();$("camBtn").innerHTML="✕";$("camBtn").classList.add("on");$("cc").style.display="block";$("la").style.display="none";draw();var needAudio=!st.stream&&(st.mic||CM.m==="video");await openCam(needAudio,CM.face);if(st.mic&&CM.stream&&CM.stream.getAudioTracks().length&&!st.stream)openMic();else if(CM.stream&&!st.mic)CM.stream.getAudioTracks().forEach(function(t){t.enabled=false});if(!st.run&&S.length&&(!st.mic||S.some(function(s){return s.real})))start()}
-function camOff(){if(CM.rec)return;if(!CM.on){$("camBtn").innerHTML=CM.ico;return}closeMusicRec();CM.on=false;$("app").classList.remove("cam");$("live").classList.remove("cam","top","mid","bot");lyrBoxReset();$("camBtn").innerHTML=CM.ico;$("camBtn").classList.remove("on");$("aa").classList.remove("on");$("cc").style.display="none";$("la").style.display="";closeCam();draw()}
+function camOff(){if(CM.rec)return;if(!CM.on){$("camBtn").innerHTML=CM.ico;return}closeMusicRec();CM.on=false;$("app").classList.remove("cam");$("live").classList.remove("cam","top","mid","bot");lyrBoxReset();$("camBtn").innerHTML=CM.ico;$("camBtn").classList.remove("on");$("aa").classList.remove("on");$("aaBtn").classList.remove("on");$("cc").style.display="none";$("la").style.display="";closeCam();draw()}
 function toggleCam(){if(CM.rec){toast("请先停止录像");return}CM.on?camOff():camOn()}
-function togBurn(){CM.burn=!CM.burn;$("burn").classList.toggle("on",CM.burn)}
+function togBurn(){CM.burn=!CM.burn;$("burn").classList.toggle("on",CM.burn);syncAA()}
+/* 快捷字幕样式：入口按钮在拍摄界面右上角；绿点表示「字幕会被拍进成片」 */
+function syncAA(){var b=$("aaBtn");if(b)b.classList.toggle("bn",!!CM.burn)}
+function toggleAA(force){var a=$("aa"),on=typeof force==="boolean"?force:!a.classList.contains("on");a.classList.toggle("on",on);$("aaBtn").classList.toggle("on",on);
+  if(on){var r=a.querySelectorAll('input[type=range]');if(r[0])r[0].value=CM.op;if(r[1])r[1].value=P.fs;$("burn").classList.toggle("on",CM.burn);vib(8)}}
+document.addEventListener("pointerdown",function(e){var a=$("aa"),b=$("aaBtn");if(a&&b&&a.classList.contains("on")&&!a.contains(e.target)&&!b.contains(e.target))toggleAA(false)},true);
 function rtUI(on){vib(on?[20,30,20]:25);var b=$("rt");b.classList.toggle("snap",on);b.textContent=on?"":"⟲";b.setAttribute("aria-label",on?"录像中拍照":"切换摄像头")}
 function rightBtn(){CM.rec?snap():flipCam()}
 function liveAt(x){try{var t=x&&x.getAudioTracks&&x.getAudioTracks()[0];return t&&t.readyState==="live"?t:null}catch(e){return null}}
@@ -1385,7 +1398,7 @@ if(it.t==="sel")return'<select onchange="setP(\''+k+'\',this.value)">'+it.o.map(
 if(it.t==="rng")return'<input type="range" min="'+it.min+'" max="'+it.max+'" step="'+it.step+'" value="'+v+'" oninput="setP(\''+k+'\',+this.value,1)"><span class="rv" id="rv-'+k+'">'+v+'</span>';
 if(it.t==="col")return'<input type="color" value="'+v+'" oninput="setP(\''+k+'\',this.value,1)">';
 return'<div class="sws">'+it.o.map(function(c){return'<button class="'+(c===v?"on":"")+'" style="background:'+(c==="auto"?"conic-gradient(#ff375f,#ff9f0a,#30d158,#64d2ff,#bf5af2,#ff375f)":c)+'" onclick="setP(\''+k+'\',\''+c+'\')" aria-label="'+c+'"></button>'}).join("")+'</div>'}
-function setSummary(g){if(g.g==="外观")return (P.theme==="auto"?"自动外观":P.theme==="light"?"浅色":"深色")+" · 强调色";if(g.g==="歌词样式"){var bg={black:"纯黑",navy:"深蓝",plum:"深紫",forest:"墨绿",ash:"深灰",white:"白天"}[P.bg]||"纯黑";var fn={sys:"系统字体",round:"圆体",serif:"宋体",kai:"楷体",mono:"等宽"}[P.font]||"系统字体";return bg+" · "+fn+" · "+P.fs+"pt"}if(g.g==="现场与相机")return (P.cam==="user"?"前置":"后置")+" · "+P.q+"p · "+(P.ratio==="auto"?(isPortrait()?"自动（竖 9:16）":"自动（横 16:9）"):P.ratio)+" · 歌词"+(P.pos==="top"?"上":P.pos==="mid"?"中":"下");if(g.g==="识别与调试")return (P.mic?"真实识别已开启":"模拟识别")+" · 调试面板"+(P.dbg?"开":"关");if(g.g==="权限与环境")return "HTTPS、页面策略与设备授权";if(g.g==="数据")return "导入、导出、恢复默认";if(g.g==="关于")return "v2.9.0 · Cheung & Neom"} 
+function setSummary(g){if(g.g==="外观")return (P.theme==="auto"?"自动外观":P.theme==="light"?"浅色":"深色")+" · 强调色";if(g.g==="歌词样式"){var bg={black:"纯黑",navy:"深蓝",plum:"深紫",forest:"墨绿",ash:"深灰",white:"白天"}[P.bg]||"纯黑";var fn={sys:"系统字体",round:"圆体",serif:"宋体",kai:"楷体",mono:"等宽"}[P.font]||"系统字体";return bg+" · "+fn+" · "+P.fs+"pt"}if(g.g==="现场与相机")return (P.cam==="user"?"前置":"后置")+" · "+P.q+"p · "+(P.ratio==="auto"?(isPortrait()?"自动（竖 9:16）":"自动（横 16:9）"):P.ratio)+" · 歌词"+(P.pos==="top"?"上":P.pos==="mid"?"中":"下");if(g.g==="识别与调试")return (P.mic?"真实识别已开启":"模拟识别")+" · 调试面板"+(P.dbg?"开":"关");if(g.g==="权限与环境")return "HTTPS、页面策略与设备授权";if(g.g==="数据")return "导入、导出、恢复默认";if(g.g==="关于")return "v2.9.1 · Cheung & Neom"} 
 function toggleSet(g){SET_OPEN[g]=!SET_OPEN[g];try{localStorage.setItem("lsync.set.open",JSON.stringify(SET_OPEN))}catch(e){}renderSet()}
 function renderSet(){var h="";SC.forEach(function(g){
   if(!DEV&&g.dev)return;
@@ -1404,7 +1417,7 @@ if(P.accent==="auto")r.style.removeProperty("--blue");else r.style.setProperty("
 var m={lbg:BGS[P.bg],ltx:w?"#111":"#fff",lfont:FONTS[P.font],lw:P.fw,llh:P.lh,lal:P.al,lcur:P.cur,lnx:P.nxc};for(var k in m)r.style.setProperty("--"+k,m[k]);
 l.classList.toggle("lt",w);l.classList.toggle("sh",P.shadow);st.dim=P.dim}
 function onP(k){applyStyle();if(k==="dbg"){st.dbg=P.dbg&&DEV;dbgUpd()}if(k==="mic"){st.mic=P.mic;if(P.mic&&st.run)openMic();else closeMic()}
-if(k==="cam"){CM.face=P.cam;CM.dev=null}if(k==="ratio"){CM.ratio=P.ratio;applyRatioUI()}if(k==="pos"){CM.pos=P.pos;if(CM.on)setPos(P.pos)}if(k==="op")CM.op=P.op;if(k==="burn"){CM.burn=P.burn;$("burn").classList.toggle("on",P.burn)}if(k==="wake")wake();draw()}
+if(k==="cam"){CM.face=P.cam;CM.dev=null}if(k==="ratio"){CM.ratio=P.ratio;applyRatioUI()}if(k==="pos"){CM.pos=P.pos;if(CM.on)setPos(P.pos)}if(k==="op")CM.op=P.op;if(k==="burn"){CM.burn=P.burn;$("burn").classList.toggle("on",P.burn);syncAA()}if(k==="wake")wake();draw()}
 function setP(k,v,live){P[k]=v;if(k==="bg"){var w=v==="white";if(w&&P.cur==="#ffffff"){P.cur="#000000";P.nxc="#3c3c43"}else if(!w&&P.cur==="#000000"){P.cur="#ffffff";P.nxc="#8e8e93"}}
 save();onP(k);if(live){var e=$("rv-"+k);if(e)e.textContent=v}else rerender()}
 function applyPreset(i){Object.assign(P,PRE[i][1]);save();for(var k in P)onP(k);rerender();toast("已应用「"+PRE[i][0]+"」")}
@@ -1798,7 +1811,7 @@ function openEgg(){
 }
 st.mic=P.mic;CM.face=P.cam;CM.pos=P.pos;CM.op=P.op;CM.ratio=P.ratio||"auto";CM.burn=P.burn;
 applyDevFlag();st.dbg=P.dbg&&DEV;
-applyRatioUI();$("burn").classList.toggle("on",P.burn);applyStyle();renderSet();
+applyRatioUI();$("burn").classList.toggle("on",P.burn);syncAA();applyStyle();renderSet();
 renderSongs();draw();setStatus("idle");
 /* Start from the Live interface without auto-starting recognition/camera. */
 go("live");
